@@ -1,0 +1,33 @@
+# Logs
+*.log
+logs/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+
+# GCP service account keys (never commit!)
+*.json
+!package.json
+
+# Node modules (if any)
+node_modules/
+
+# Build artifacts
+dist/
+build/
