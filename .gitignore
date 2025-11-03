@@ -31,3 +31,28 @@ node_modules/
 # Build artifacts
 dist/
 build/
+
+# Ignore nested git directories in context repos
+# (keeps the code, ignores the .git metadata)
+context_read-only/*/.git/
+
+# Cursor state databases
+*.vscdb
+
+# XanoScript code files (keep local for reference, contain production secrets)
+# Keep documentation files (.md, .csv, .py) but exclude all XanoScript .xs files
+context_read-only/xano-wescope/**/*.xs
+context_read-only/xano-wescope/apis/
+context_read-only/xano-wescope/functions/
+context_read-only/xano-wescope/addons/
+context_read-only/xano-wescope/tables/
+context_read-only/xano-wescope/tasks/
+context_read-only/xano-wescope/tools/
+context_read-only/xano-wescope/middlewares/
+context_read-only/xano-wescope/realtime/
+context_read-only/xano-wescope/mcp_servers/
+context_read-only/xano-wescope/workflow_tests/
+# Keep important documentation
+!context_read-only/xano-wescope/**/*.md
+!context_read-only/xano-wescope/**/*.csv
+!context_read-only/xano-wescope/**/*.py
