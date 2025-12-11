@@ -271,6 +271,12 @@ def initialize_browser_profile(client_name: str, urls: List[str], user_scope: st
     if IS_WINDOWS:
         chrome_options = Options()
         chrome_options.add_argument(f"--user-data-dir={profile_path}")
+        chrome_options.add_argument("--start-maximized")
+        
+        # Turn off automation flags so Chrome treats this as a normal user session
+        # This enables "Save Password", sync, and other consumer features.
+        chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
+        chrome_options.add_experimental_option('useAutomationExtension', False)
         
         driver = None
         try:
