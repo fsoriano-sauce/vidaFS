@@ -85,174 +85,31 @@ ICON_DIR = os.path.join(os.getcwd(), "client_icons")
 # HELPER FUNCTIONS
 # ==============================================================================
 
-def sanitize_filename(name: str) -> str:
-    """Sanitizes a string to be safe for use as a filename."""
-    return re.sub(r'[<>:"/\\|?*]', '_', name).strip()
-
-def generate_client_icon(client_name: str) -> str:
+def clean_target_url(url: str) -> str:
     """
-    Generates a custom icon for the client with their name and a colored background.
-    Returns the path to the generated icon file.
+    Removes specific login paths from the URL so the browser lands on the dashboard
+    if the session is already active.
     """
-    if not HAS_PIL:
-        print("Warning: PIL not available. Using default Chrome icon.")
-        return CHROME_EXE_PATH
+    # Patterns to strip from the END of the URL
+    patterns = [
+        r"/login/?$",
+        r"/signin/?$",
+        r"/auth/login/?$",
+        r"/users/sign_in/?$",
+        r"\.aspx\?.*login.*"
+    ]
+    
+    clean_url = url
+    for p in patterns:
+        clean_url = re.sub(p, "", clean_url, flags=re.IGNORECASE)
+    
+    # Specific fix for known problematic patterns if regex is too broad
+    if "docusketch" in clean_url.lower():
+         clean_url = clean_url.split("/login")[0]
+         
+    return clean_url.rstrip("/")
 
-    # Ensure icon directory exists
-    if not os.path.exists(ICON_DIR):
-        os.makedirs(ICON_DIR)
-
-    # Create a unique color based on client name
-    hue = hash(client_name) % 360 / 360.0
-    saturation = 0.7
-    value = 0.9
-    rgb = colorsys.hsv_to_rgb(hue, saturation, value)
-    bg_color = tuple(int(c * 255) for c in rgb)
-
-    # Create image
-    img = Image.new('RGBA', ICON_SIZE, bg_color + (255,))
-    draw = ImageDraw.Draw(img)
-
-    # Try to use a nice font, fallback to default
-    try:
-        # Use a larger font size for better visibility
-        font_size = 48
-        font = ImageFont.truetype("arial.ttf", font_size)
-    except:
-        try:
-            font = ImageFont.load_default()
-        except:
-            font = None
-
-    # Get initials from client name
-    words = client_name.split()
-    if len(words) >= 2:
-        initials = words[0][0].upper() + words[1][0].upper()
-    else:
-        initials = client_name[:2].upper()
-
-    # Calculate text position (centered)
-    if font:
-        bbox = draw.textbbox((0, 0), initials, font=font)
-        text_width = bbox[2] - bbox[0]
-        text_height = bbox[3] - bbox[1]
-    else:
-        text_width, text_height = 40, 20
-
-    x = (ICON_SIZE[0] - text_width) // 2
-    y = (ICON_SIZE[1] - text_height) // 2
-
-    # Draw white text with black outline
-    text_color = (255, 255, 255, 255)
-    outline_color = (0, 0, 0, 255)
-
-    # Draw outline
-    for dx, dy in [(-2, -2), (-2, 0), (-2, 2), (0, -2), (0, 2), (2, -2), (2, 0), (2, 2)]:
-        draw.text((x + dx, y + dy), initials, fill=outline_color, font=font)
-
-    # Draw main text
-    draw.text((x, y), initials, fill=text_color, font=font)
-
-    # Save as ICO file
-    icon_path = os.path.join(ICON_DIR, f"{sanitize_filename(client_name)}.ico")
-    img.save(icon_path, format='ICO', sizes=[(256, 256), (128, 128), (64, 64), (32, 32), (16, 16)])
-
-    print(f"Generated custom icon: {icon_path}")
-    return icon_path
-
-def fetch_client_data(limit_clients: int = None) -> Dict[str, List[str]]:
-    """
-    Fetches client systems from BigQuery.
-    Mocks data if in Demo Mode and BQ lib is missing.
-    limit_clients: If specified, limit to this many clients for testing
-    """
-    if DEMO_MODE and not HAS_BIGQUERY:
-        print("Warning: 'google-cloud-bigquery' not found. Using MOCK data for demo.")
-        mock_data = {
-            "State Farm": ["https://login.statefarm.com", "https://claims.statefarm.com"],
-            "Allstate": ["https://agent.allstate.com"],
-            "Farmers": ["https://portal.farmers.com", "https://billing.farmers.com"]
-        }
-        if limit_clients:
-            # Take first N clients for testing
-            client_names = list(mock_data.keys())[:limit_clients]
-            return {name: mock_data[name] for name in client_names}
-        return mock_data
-
-    print("Fetching data from BigQuery...")
-    try:
-        client = bigquery.Client(project=BQ_PROJECT_ID)
-        query_job = client.query(BQ_QUERY)
-        results = query_job.result()
-
-        data = defaultdict(list)
-        for row in results:
-            if row.login_url:
-                data[row.client_name].append(row.login_url)
-
-        print(f"Successfully fetched systems for {len(data)} clients.")
-
-        # Limit clients if specified (for testing)
-        if limit_clients and len(data) > limit_clients:
-            client_names = list(data.keys())[:limit_clients]
-            limited_data = {name: data[name] for name in client_names}
-            print(f"Limited to {limit_clients} clients for testing: {list(limited_data.keys())}")
-            return limited_data
-
-        return data
-    except Exception as e:
-        if DEMO_MODE:
-            print(f"BQ Fetch Failed ({e}). Switching to MOCK data for demo.")
-            mock_data = {
-                "State Farm": ["https://login.statefarm.com"],
-                "Allstate": ["https://agent.allstate.com"]
-            }
-            if limit_clients:
-                client_names = list(mock_data.keys())[:limit_clients]
-                return {name: mock_data[name] for name in client_names}
-            return mock_data
-        else:
-            print(f"Error fetching data from BigQuery: {e}")
-            sys.exit(1)
-
-def create_desktop_shortcut(name: str, target: str, arguments: str, folder: str, description: str = "", icon_path: str = ""):
-    """Creates a Windows shortcut (.lnk) or a mock file in Demo Mode."""
-    if not os.path.exists(folder):
-        os.makedirs(folder)
-
-    if IS_WINDOWS:
-        try:
-            path = os.path.join(folder, f"{name}.lnk")
-            shell = win32com.client.Dispatch('WScript.Shell')
-            shortcut = shell.CreateShortCut(path)
-            shortcut.TargetPath = target
-            shortcut.Arguments = arguments
-            shortcut.Description = description
-            # Use custom icon if provided, otherwise use Chrome icon
-            shortcut.IconLocation = icon_path if icon_path else target
-            shortcut.save()
-            print(f"Shortcut created: {path}")
-        except Exception as e:
-            print(f"Failed to create shortcut '{name}': {e}")
-    else:
-        # Mock Shortcut (Text File)
-        path = os.path.join(folder, f"{name}.fake_lnk")
-        with open(path, "w") as f:
-            f.write(f"TARGET: {target}\nARGS: {arguments}\nDESC: {description}\nICON: {icon_path}")
-        print(f"[DEMO] Created mock shortcut: {path}")
-
-def get_desktop_path() -> str:
-    """Returns the path to the current user's Desktop or a Demo Dist folder."""
-    if IS_WINDOWS:
-        try:
-            return winshell.desktop()
-        except:
-            return os.path.join(os.path.expanduser("~"), "Desktop")
-    else:
-        d = os.path.abspath("./dist/Desktop")
-        if not os.path.exists(d):
-            os.makedirs(d)
-        return d
+# ... (Existing funcs) ...
 
 def initialize_browser_profile(client_name: str, urls: List[str], user_scope: str, base_dir: str):
     """
@@ -274,9 +131,14 @@ def initialize_browser_profile(client_name: str, urls: List[str], user_scope: st
         chrome_options.add_argument("--start-maximized")
         
         # Turn off automation flags so Chrome treats this as a normal user session
-        # This enables "Save Password", sync, and other consumer features.
         chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
         chrome_options.add_experimental_option('useAutomationExtension', False)
+        
+        # Force a standard User-Agent. 
+        # Crucial for session persistence: If Selenium uses a "Headless" or "WebDriver" UA,
+        # the session cookies might be invalid when you open the shortcut (Native Chrome).
+        standard_ua = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        chrome_options.add_argument(f"user-agent={standard_ua}")
         
         driver = None
         try:
@@ -284,6 +146,7 @@ def initialize_browser_profile(client_name: str, urls: List[str], user_scope: st
                 service=ChromeService(ChromeDriverManager().install()),
                 options=chrome_options
             )
+
             
             if urls:
                 driver.get(urls[0])
@@ -332,7 +195,11 @@ def main(limit_clients: int = None):
     # 2. Iterate and Process
     for client_name, urls in clients_data.items():
         clean_name = sanitize_filename(client_name)
-        url_args = " ".join([f'"{url}"' for url in urls])
+        
+        # Clean URLs for the shortcut arguments
+        # We want the shortcut to open the dashboard, not the login page
+        cleaned_urls = [clean_target_url(u) for u in urls]
+        url_args = " ".join([f'"{url}"' for url in cleaned_urls])
 
         # Generate custom icon for this client
         icon_path = generate_client_icon(client_name)
