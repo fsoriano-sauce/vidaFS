@@ -40,3 +40,5 @@ echo.
 echo Setup complete! Check your Desktop for the new shortcuts with custom icons.
 echo.
 pause
+
+
