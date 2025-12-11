@@ -1,22 +1,9 @@
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.egg-info/
-.eggs/
-*.egg
-
-# Output directories (created at runtime)
-dist/
-client_icons/
+# Ignore generated artifacts
+*.zip
+*.lnk
 For_Ana_Desktop/
-My_Profiles/
-Ana_Profiles/
-
-# IDE
-.vscode/
-.idea/
-
-# OS
-.DS_Store
-Thumbs.db
+For_Frankie_Desktop/
+client_icons/*.ico
+!client_icons/WeScope_Standard.ico
+__pycache__/
+*.pyc
