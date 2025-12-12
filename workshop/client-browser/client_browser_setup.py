@@ -37,16 +37,24 @@ else:
 
 if IS_WINDOWS:
     # Production Windows Paths
-    BASE_DIR_SELF = r"C:\Automation\My_Profiles"
-    BASE_DIR_ANA = r"C:\Automation\Ana_Profiles"
-    SHORTCUT_DIR_ANA = os.path.join(os.getcwd(), "For_Ana_Desktop")
+    BASE_DIR_PROFILES = r"C:\Automation\Profiles"
+    BASE_DIR_SELF = BASE_DIR_PROFILES # Legacy/Universal
+    BASE_DIR_ANA = BASE_DIR_PROFILES  # Legacy/Universal
+    
+    SHORTCUT_DIR_TEAM = os.path.join(os.getcwd(), "For_Team_Desktop")
+    SHORTCUT_DIR_ANA = SHORTCUT_DIR_TEAM # Reuse var for cleaner diff, or just update main usage
+    
     CHROME_EXE_PATH = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
+    ICON_DIR = r"C:\Automation\Icons"
+    DASHBOARD_DIR = r"C:\Automation\Dashboards"
 else:
     # Demo Linux Paths (Current Directory)
     BASE_DIR_SELF = os.path.abspath("./dist/Automation/My_Profiles")
     BASE_DIR_ANA = os.path.abspath("./dist/Automation/Ana_Profiles")
     SHORTCUT_DIR_ANA = os.path.abspath("./dist/For_Ana_Desktop")
     CHROME_EXE_PATH = "/usr/bin/google-chrome" # Mock
+    ICON_DIR = os.path.abspath("./dist/Automation/Icons")
+    DASHBOARD_DIR = os.path.abspath("./dist/Automation/Dashboards")
     print(f"DEMO PATHS:\n  Self Profiles: {BASE_DIR_SELF}\n  Ana Profiles: {BASE_DIR_ANA}\n")
 
 # BigQuery Settings
@@ -54,7 +62,10 @@ BQ_PROJECT_ID = "xano-fivetran-bq"
 BQ_QUERY = """
     SELECT
         c.full_name as client_name,
-        sa.link as login_url
+        sa.link as login_url,
+        c.key_and_pro_account as is_key_account,
+        c.subscription_id,
+        s.subscription_name
     FROM
         `xano-fivetran-bq.staging_xano.ptl_client` c
     JOIN
@@ -65,8 +76,14 @@ BQ_QUERY = """
         `xano-fivetran-bq.staging_xano.ptl_system_access` sa
     ON
         l.system_access_id = sa.id
+    LEFT JOIN
+        `xano-fivetran-bq.staging_xano.ptl_subscription` s
+    ON
+        c.subscription_id = s.id
     WHERE
-        c.subscription_id = 14
+        c.suspended = false
+        AND c._fivetran_deleted = false
+        AND c.subscription_id IN (2, 3, 4, 5, 8, 9, 12, 13, 14, 15, 16) -- Updated validation list
         AND sa.link IS NOT NULL
         AND sa.link != ''
         AND (sa.client_id IS NULL OR sa.client_id = '')  -- Exclude API-connected systems
@@ -74,7 +91,7 @@ BQ_QUERY = """
 
 # Icon Settings
 ICON_SIZE = (256, 256)
-ICON_DIR = os.path.join(os.getcwd(), "client_icons")
+# ICON_DIR is now defined above with paths
 
 # ==============================================================================
 # HELPER FUNCTIONS
@@ -90,7 +107,7 @@ def create_client_dashboard(clean_name: str, client_name: str, urls: List[str]) 
     Returns the absolute path to the file.
     """
     # Dashboard directory - fixed path for portability
-    dash_dir = r"C:\Automation\Dashboards"
+    dash_dir = DASHBOARD_DIR
     if not os.path.exists(dash_dir):
         os.makedirs(dash_dir)
         
@@ -154,10 +171,32 @@ def create_client_dashboard(clean_name: str, client_name: str, urls: List[str]) 
         
     return filename
 
-def get_standard_icon() -> str:
+def get_category_metadata(subscription_id: int, is_key_account: bool):
     """
-    Returns the path to the standard WeScope green icon.
-    Creates it if it doesn't exist.
+    Returns (category_name, color_tuple, text_label) based on priority rules.
+    """
+    # Priority 1: PRO (Sub 14)
+    if subscription_id == 14:
+        return "PRO", (46, 204, 113), "PRO" # Green
+    
+    # Priority 2: KEY
+    if is_key_account:
+        return "KEY", (41, 128, 185), "KEY" # Blue
+    
+    # Priority 3: NEW (Sub 12, 13)
+    if subscription_id in [12, 13]:
+        return "NEW", (127, 140, 141), "NEW" # Dark Grey
+    
+    # Priority 4: LEGACY (Sub 2,3,4,5,8,9)
+    if subscription_id in [2, 3, 4, 5, 8, 9]:
+        return "LEGACY", (189, 195, 199), "LEG" # Light Grey
+    
+    # Fallback (shouldn't happen with strict query)
+    return "UNKNOWN", (149, 165, 166), "?"
+
+def generate_labeled_icon(subscription_id: int, is_key_account: bool) -> str:
+    """
+    Generates an icon with the appropriate background color and text label.
     """
     if not HAS_PIL:
         print("Warning: PIL not available. Using default Chrome icon.")
@@ -167,14 +206,46 @@ def get_standard_icon() -> str:
     if not os.path.exists(ICON_DIR):
         os.makedirs(ICON_DIR)
 
-    # Path to standard icon
-    icon_path = os.path.join(ICON_DIR, "WeScope_Standard.ico")
+    category, color_hex, label_text = get_category_metadata(subscription_id, is_key_account)
+    filename = f"WeScope_{category}.ico"
+    icon_path = os.path.join(ICON_DIR, filename)
     
     # Create if doesn't exist
     if not os.path.exists(icon_path):
-        print("Creating standard WeScope icon...")
-        GREEN_COLOR = (46, 204, 113)  # Professional green
-        img = Image.new('RGB', ICON_SIZE, GREEN_COLOR)
+        print(f"Creating {category} icon ({label_text})...")
+        
+        # Create base image
+        img = Image.new('RGB', ICON_SIZE, color_hex)
+        draw = ImageDraw.Draw(img)
+        
+        # Add text
+        try:
+            # Try to load a nice font, or fallback to default
+            font_size = 100
+            try:
+                # Arial is commonly available
+                font = ImageFont.truetype("arial.ttf", font_size)
+            except IOError:
+                # Linux/Other might not have arial, try generic sans
+                try:
+                    font = ImageFont.truetype("DejaVuSans-Bold.ttf", font_size)
+                except:
+                    font = ImageFont.load_default()
+        except:
+             font = ImageFont.load_default()
+
+        # Center text (approximate if using default font)
+        # Using simple centering logic
+        text_bbox = draw.textbbox((0, 0), label_text, font=font)
+        text_width = text_bbox[2] - text_bbox[0]
+        text_height = text_bbox[3] - text_bbox[1]
+        
+        x = (ICON_SIZE[0] - text_width) // 2
+        y = (ICON_SIZE[1] - text_height) // 2
+        
+        # Draw text in White
+        draw.text((x, y), label_text, fill=(255, 255, 255), font=font)
+
         img.save(icon_path, format='ICO', sizes=[(256, 256), (128, 128), (64, 64), (32, 32), (16, 16)])
         print(f"  Created: {icon_path}")
     
@@ -245,18 +316,14 @@ def clean_target_url(url: str) -> str:
     # These take priority and return immediately
     # =========================================================================
     
-    # Xactimate/XactAnalysis/ContentsTrack - Verisk login URLs should go directly to the portal
-    # These all share the same Verisk backend but need different portal URLs
-    if "identity.verisk.com" in url.lower() or "xactimate.com" in url.lower() or "xactanalysis.com" in url.lower() or "contentstrack.com" in url.lower():
-        if "xactimate" in url.lower() or "xor" in url.lower():
-            print(f"  [URL Replacement] Xactimate: -> portal page")
-            return "https://xactimate.com/xor/app/dashboard"
+    # Xactimate/XactAnalysis - Verisk login URLs should go directly to the app
+    if "identity.verisk.com" in url.lower():
+        if "xactimate" in url.lower() or "xor.xactimate" in url.lower():
+            print(f"  [URL Replacement] Xactimate: identity.verisk.com -> xactimate.com")
+            return "https://xactimate.com/xor/app/instance-selection"
         elif "xactanalysis" in url.lower():
-            print(f"  [URL Replacement] XactAnalysis: -> portal page")
-            return "https://xactanalysis.com/apps/xnportal/xid_landing.jsp?context=GENER"
-        elif "contentstrack" in url.lower():
-            print(f"  [URL Replacement] ContentsTrack: -> portal page")
-            return "https://contentstrack.com/dashboard"
+            print(f"  [URL Replacement] XactAnalysis: identity.verisk.com -> xactanalysis.com")
+            return "https://www.xactanalysis.com"
         else:
             # Generic Verisk - just go to settings (or the base)
             print(f"  [URL Replacement] Verisk: stripping login params")
@@ -268,32 +335,32 @@ def clean_target_url(url: str) -> str:
         print(f"  [URL Replacement] Symbility: -> #/claims")
         return "https://www.symbility.net/ux/site/#/claims"
     
-    # NextGear Platforms - go to post-login page to avoid "Hello World" error
-    # These platforms all use NextGear software and have the same Login.aspx issue
-    # All white labels: RESTORE365, DASH, Alacrity, FUSION, RMS, Solitaire
+    # RESTORE365 - go to the post-login page, not the login page
+    # The /User/ path shows "Hello World" which is broken
+    # RESTORE365 - go to the post-login page
     if "restore365.net" in url.lower():
         print(f"  [URL Replacement] RESTORE365: -> uPostLogin.aspx")
         return "https://restore365.net/Enterprise/Module/User/uPostLogin.aspx"
-    
+        
+    # DASH (NextGear) - Fix "Hello World" on /User/ path
     if "dash-ngs.net" in url.lower():
-        print(f"  [URL Replacement] DASH: -> uPostLogin.aspx")
-        return "https://dash-ngs.net/NextGear/Enterprise/Module/User/uPostLogin.aspx"
-    
-    if "fusion-ngs.net" in url.lower():
-        print(f"  [URL Replacement] FUSION: -> uPostLogin.aspx")
-        return "https://fusion-ngs.net/Enterprise/Module/User/uPostLogin.aspx"
-    
+         print(f"  [URL Replacement] DASH: -> uPostLogin.aspx")
+         return "https://www.dash-ngs.net/NextGear/Enterprise/Module/User/uPostLogin.aspx"
+         
+    # RMS (NextGear)
     if "rms-ngs.net" in url.lower():
-        print(f"  [URL Replacement] RMS: -> uPostLogin.aspx")
-        return "https://rms-ngs.net/RMS/Module/User/uPostLogin.aspx"
-    
+         print(f"  [URL Replacement] RMS: -> uPostLogin.aspx")
+         return "https://rms-ngs.net/RMS/Module/User/uPostLogin.aspx"
+
+    # Fusion (NextGear)
+    if "fusion-ngs.net" in url.lower():
+         print(f"  [URL Replacement] Fusion: -> uPostLogin.aspx")
+         return "https://fusion-ngs.net/Enterprise/Module/User/uPostLogin.aspx"
+
+    # Solitaire (NextGear)
     if "solitaire-ngs.net" in url.lower():
-        print(f"  [URL Replacement] Solitaire: -> uPostLogin.aspx")
-        return "https://solitaire-ngs.net/DKI/Module/User/uPostLogin.aspx"
-    
-    if "alacrity.net" in url.lower():
-        print(f"  [URL Replacement] Alacrity: -> uPostLogin.aspx")
-        return "https://www.alacrity.net/User/uPostLogin.aspx"
+         print(f"  [URL Replacement] Solitaire: -> uPostLogin.aspx")
+         return "https://solitaire-ngs.net/DKI/Module/User/uPostLogin.aspx"
     
     # Apply URL overrides first
     clean_url = url
@@ -328,22 +395,20 @@ def clean_target_url(url: str) -> str:
     return clean_url.rstrip("/")
 
 
-def fetch_client_data(limit_clients: int = None) -> Dict[str, List[str]]:
+def fetch_client_data(limit_clients: int = None) -> Dict[str, Dict]:
     """
     Fetches client systems from BigQuery.
-    Mocks data if in Demo Mode and BQ lib is missing.
-    limit_clients: If specified, limit to this many clients for testing
+    Returns: { "Client Name": { "urls": [...], "is_key_account": bool } }
     """
     if DEMO_MODE and not HAS_BIGQUERY:
         print("Warning: 'google-cloud-bigquery' not found. Using MOCK data for demo.")
         mock_data = {
-            "State Farm": ["https://login.statefarm.com", "https://claims.statefarm.com/login"],
-            "Allstate": ["https://agent.allstate.com/signin"],
-            "Farmers": ["https://portal.farmers.com/auth/login", "https://billing.farmers.com"],
-            "Docusketch": ["https://app.docusketch.com/login"]
+            "State Farm": {"urls": ["https://login.statefarm.com", "https://claims.statefarm.com/login"], "is_key_account": True},
+            "Allstate": {"urls": ["https://agent.allstate.com/signin"], "is_key_account": False},
+            "Farmers": {"urls": ["https://portal.farmers.com/auth/login", "https://billing.farmers.com"], "is_key_account": False},
+            "Docusketch": {"urls": ["https://app.docusketch.com/login"], "is_key_account": True}
         }
         if limit_clients:
-            # Take first N clients for testing
             client_names = list(mock_data.keys())[:limit_clients]
             return {name: mock_data[name] for name in client_names}
         return mock_data
@@ -354,13 +419,19 @@ def fetch_client_data(limit_clients: int = None) -> Dict[str, List[str]]:
         query_job = client.query(BQ_QUERY)
         results = query_job.result()
 
-        data = defaultdict(list)
+        data = defaultdict(lambda: {"urls": [], "is_key_account": False, "subscription_id": None, "subscription_name": "Unknown"})
         for row in results:
             if row.login_url:
-                data[row.client_name].append(row.login_url)
+                data[row.client_name]["urls"].append(row.login_url)
+                # If 'true' string or boolean True in BQ, handle appropriately
+                # keys in BQ are often strings 'true' or 'false'
+                is_key = str(row.is_key_account).lower() == 'true'
+                data[row.client_name]["is_key_account"] = is_key
+                data[row.client_name]["subscription_id"] = row.subscription_id
+                data[row.client_name]["subscription_name"] = row.subscription_name
 
         print(f"Successfully fetched systems for {len(data)} clients.")
-
+        
         # Limit clients if specified (for testing)
         if limit_clients and len(data) > limit_clients:
             client_names = list(data.keys())[:limit_clients]
@@ -373,8 +444,8 @@ def fetch_client_data(limit_clients: int = None) -> Dict[str, List[str]]:
         if DEMO_MODE:
             print(f"BQ Fetch Failed ({e}). Switching to MOCK data for demo.")
             mock_data = {
-                "State Farm": ["https://login.statefarm.com"],
-                "Allstate": ["https://agent.allstate.com"]
+                "State Farm": {"urls": ["https://login.statefarm.com"], "is_key_account": True},
+                "Allstate": {"urls": ["https://agent.allstate.com"], "is_key_account": False}
             }
             if limit_clients:
                 client_names = list(mock_data.keys())[:limit_clients]
@@ -382,7 +453,8 @@ def fetch_client_data(limit_clients: int = None) -> Dict[str, List[str]]:
             return mock_data
         else:
             print(f"Error fetching data from BigQuery: {e}")
-            sys.exit(1)
+            # Do not exit, try to continue or raise
+            raise e
 
 
 
@@ -428,32 +500,134 @@ def get_desktop_path() -> str:
 # ... (Existing funcs) ...
 
 
+def create_subset_zip(base_path, subfolders, output_zip_path):
+    """
+    Creates a zip file containing only specific subfolders from base_path.
+    Structure in zip: /Automation/[subfolder]
+    """
+    import shutil
+    import tempfile
+    
+    print(f"[-] Creating filtered zip: {os.path.basename(output_zip_path)}")
+    try:
+        # Create temp dir for staging
+        with tempfile.TemporaryDirectory() as temp_dir:
+            # We want the zip to contain a root folder "Automation"
+            staging_root = os.path.join(temp_dir, "Automation")
+            os.makedirs(staging_root)
+            
+            for sub in subfolders:
+                src = os.path.join(base_path, sub)
+                dst = os.path.join(staging_root, sub)
+                if os.path.exists(src):
+                    # copytree needs destination to NOT exist
+                    shutil.copytree(src, dst)
+                    print(f"    Including: {sub}")
+                else:
+                    print(f"    [WARNING] Missing: {sub}")
+            
+            # Zip the staging dir (contains "Automation" folder)
+            shutil.make_archive(output_zip_path.replace('.zip', ''), 'zip', temp_dir)
+            print(f"[OK] Created {os.path.basename(output_zip_path)}")
+            return True
+    except Exception as e:
+        print(f"[ERROR] Failed to create zip: {e}")
+        return False
+
 # ==============================================================================
 # MAIN LOGIC
 # ==============================================================================
 
+def generate_subscription_reference(clients_data: Dict):
+    """Generates a markdown reference for Subscription IDs (Queries BQ for full list)."""
+    if not HAS_BIGQUERY: return
+
+    print("Generating Subscription Reference (Fetching full list)...")
+    try:
+        client = bigquery.Client(project=BQ_PROJECT_ID)
+        query = "SELECT id, subscription_name FROM `xano-fivetran-bq.staging_xano.ptl_subscription` ORDER BY id"
+        results = client.query(query).result()
+        
+        lines = ["# Subscription ID Reference\n", 
+                 "| ID | Name | Default Category | Notes |", 
+                 "|---|---|---|---|"]
+        
+        for row in results:
+            sid = row.id
+            sname = row.subscription_name
+            # Provide default category (assuming Not Key Account)
+            cat, _, _ = get_category_metadata(sid, False)
+            
+            note = ""
+            if sid == 14: 
+                note = "Pro Tier (Always PRO)"
+            elif sid in [12, 13]:
+                note = "New Structure (Essential/Plus)"
+            elif sid in [2,3,4,5,8,9]:
+                note = "Legacy Tiers"
+                
+            lines.append(f"| {sid} | {sname} | {cat} | {note} |")
+            
+        # Add Key Account Note
+        lines.append("\n## Logic Mapping")
+        lines.append("1. **PRO (Green)**: Subscription ID = 14")
+        lines.append("2. **KEY (Blue)**: If Client is 'Key Account' (Verified) AND not PRO.")
+        lines.append("3. **NEW (Dark Grey)**: Subscription ID = 12 or 13")
+        lines.append("4. **LEG (Light Grey)**: All other legacy IDs (2-9)")
+        
+        with open("subscription_reference.md", "w") as f:
+            f.write("\n".join(lines))
+        print(f"[INFO] Created subscription_reference.md")
+        
+    except Exception as e:
+        print(f"[WARNING] Failed to generate reference: {e}")
+
 def main(limit_clients: int = None):
     print("Starting Client Browser Setup Script...")
+# ... (standard main logic up to packaging) ...
+# I will use replace_file_content carefully to preserve the middle of main
+# Wait, I cannot use replace_file_content to insert helper AND update main if they are far apart in one chunk.
+# I will insert helper first right before main.
+
+# Wait, replace_file_content does supports standard edit.
+# I will insert the helper function before main() definition.
+
     if limit_clients:
         print(f"TEST MODE: Limited to {limit_clients} clients")
 
     # 1. Fetch Data
     clients_data = fetch_client_data(limit_clients=limit_clients)
+    generate_subscription_reference(clients_data)
 
     if not clients_data:
         print("No clients found.")
         return
 
+    # Ensure fresh build by cleaning old dashboards
+    import shutil
+    if os.path.exists(DASHBOARD_DIR):
+        print("Cleaning old dashboards...")
+        try:
+            shutil.rmtree(DASHBOARD_DIR)
+        except Exception as e:
+            print(f"[WARNING] Could not clean dashboards: {e}")
+    if not os.path.exists(DASHBOARD_DIR):
+        os.makedirs(DASHBOARD_DIR)
+
     # Create local output folder for Ana's shortcuts
     if not os.path.exists(SHORTCUT_DIR_ANA):
         os.makedirs(SHORTCUT_DIR_ANA)
 
-    # Get the standard WeScope icon (once for all clients)
-    standard_icon_path = get_standard_icon()
-    
     # 2. Iterate and Process
-    for client_name, urls in clients_data.items():
+    for client_name, data in clients_data.items():
+        urls = data["urls"]
+        is_key_account = data["is_key_account"]
+        subscription_id = data.get("subscription_id")
+        
         clean_name = sanitize_filename(client_name)
+        
+        # Generate Colored Icon
+        icon_path = generate_labeled_icon(subscription_id, is_key_account)
         
         # Clean URLs for the shortcut arguments
         # We want the shortcut to open the dashboard, not the login page
@@ -483,67 +657,108 @@ def main(limit_clients: int = None):
         # Note: We use file:/// URI for the dashboard
         dashboard_url = f"file:///{dashboard_path.replace(os.sep, '/')}"
         
-        # Combine all URLs (Dashboard + Systems)
-        all_urls = [dashboard_url] + final_urls
+        # Combine all URLs (Dashboard + Systems + WeScope)
+        all_urls = [dashboard_url] + final_urls + ["https://portal.wescope.com/"]
         url_args = " ".join([f'"{url}"' for url in all_urls])
 
-        # --- Scope: Self ---
-        print(f"\n[Creating Shortcut] {clean_name} (Self)")
-        self_profile_path = os.path.join(BASE_DIR_SELF, clean_name)
+        # --- Scope: Team (Unified) ---
+        # Determine Sort Prefix (1=PRO, 2=KEY, 3=NEW, 4=LEG)
+        cat_sort, _, _ = get_category_metadata(subscription_id, is_key_account)
+        prefix = "9"
+        if cat_sort == "PRO": prefix = "1"
+        elif cat_sort == "KEY": prefix = "2"
+        elif cat_sort == "NEW": prefix = "3"
+        elif cat_sort == "LEGACY": prefix = "4"
         
-        # Ensure profile directory exists
-        if not os.path.exists(self_profile_path):
-            os.makedirs(self_profile_path)
+        shortcut_label = f"{prefix} - {clean_name}"
+        print(f"\n[Creating Shortcut] {shortcut_label} (Team)")
+
+        # Profile Path: Must use ORIGINAL clean_name to preserve data migration
+        profile_path = os.path.join(BASE_DIR_PROFILES, clean_name)
+        if not os.path.exists(profile_path):
+             os.makedirs(profile_path)
+             
+        chrome_args = f'--user-data-dir="{profile_path}" --profile-directory="Default" {url_args}'
         
-        # Add profile name to Chrome arguments so it shows in window title
-        chrome_args = f'--user-data-dir="{self_profile_path}" --profile-directory="Default" {url_args}'
-        
-        # Output to "For_Frankie_Desktop" folder for packaging
-        frankie_shortcut_dir = os.path.join(os.getcwd(), "For_Frankie_Desktop")
-        if not os.path.exists(frankie_shortcut_dir):
-            os.makedirs(frankie_shortcut_dir)
+        if not os.path.exists(SHORTCUT_DIR_TEAM):
+            os.makedirs(SHORTCUT_DIR_TEAM)
 
         create_desktop_shortcut(
-            name=clean_name,
+            name=shortcut_label,
             target=CHROME_EXE_PATH,
             arguments=chrome_args,
-            folder=frankie_shortcut_dir,
-            description=f"Launch {client_name} Systems",
-            icon_path=standard_icon_path
-        )
-
-        # --- Scope: Ana ---
-        print(f"[Creating Shortcut] {clean_name} (Ana)")
-        ana_profile_path = os.path.join(BASE_DIR_ANA, clean_name)
-        
-        # Ensure profile directory exists
-        if not os.path.exists(ana_profile_path):
-            os.makedirs(ana_profile_path)
-
-        create_desktop_shortcut(
-            name=f"Ana - {clean_name}",
-            target=CHROME_EXE_PATH,
-            arguments=f'--user-data-dir="{ana_profile_path}" {url_args}',
-            folder=SHORTCUT_DIR_ANA,
-            description=f"Launch {client_name} Systems for Ana",
-            icon_path=standard_icon_path
+            folder=SHORTCUT_DIR_TEAM,
+            description=f"Launch {client_name}",
+            icon_path=icon_path
         )
     
-    # 3. Handoff Instructions
+    # 3. Packaging for Ana (Automated)
     print("\n" + "="*80)
-    print("PROCESS COMPLETE! HANDOFF INSTRUCTIONS:")
+    print("PACKAGING FOR ANA...")
     print("="*80)
+    
+    # Destination folder
+    dist_dir = os.path.join(os.getcwd(), "For_Ana_Complete")
+    if not os.path.exists(dist_dir):
+        os.makedirs(dist_dir)
+    
+    # 3. Packaging for Team (Unified)
+    print("\n" + "="*80)
+    print("PACKAGING FOR TEAM (UNIVERSAL)...")
+    print("="*80)
+    
+    # Destination folder
+    dist_dir = os.path.join(os.getcwd(), "For_Team_Complete")
+    if not os.path.exists(dist_dir):
+        os.makedirs(dist_dir)
+    
+    # Files to copy/zip
+    setup_script_src = os.path.join(os.path.dirname(__file__), "SETUP_TEAM.bat")
+    
+    # 1. Copy Setup Script
+    import shutil
+    try:
+        if os.path.exists(setup_script_src):
+            shutil.copy2(setup_script_src, dist_dir)
+            print(f"[OK] Copied SETUP_TEAM.bat to {dist_dir}")
+        else:
+            print(f"[WARNING] Setup script not found at {setup_script_src}")
+    except Exception as e:
+        print(f"[ERROR] Copy failed: {e}")
+
+    # 2. Zip Shortcuts
+    print("[-] Zipping Shortcuts...")
+    try:
+        shutil.make_archive(
+            os.path.join(dist_dir, "Shortcuts"), 
+            'zip', 
+            SHORTCUT_DIR_TEAM
+        )
+        print(f"[OK] Created Shortcuts.zip")
+    except Exception as e:
+        print(f"[ERROR] Zipping shortcuts failed: {e}")
+
+    # 3. Create Clean Automation.zip (Universal)
+    print("[-] Creating Clean Automation.zip (Icons, Dashboards Only)...")
     if IS_WINDOWS:
-        print(f"1. Locate the Profile Folder: {BASE_DIR_ANA}")
-        print(f"2. LOCATE the SHORTCUT Folder: {SHORTCUT_DIR_ANA}")
+        automation_src = r"C:\Automation"
     else:
-        print(f"[DEMO] 1. Locate the Profile Folder: {BASE_DIR_ANA}")
-        print(f"[DEMO] 2. LOCATE the SHORTCUT Folder: {SHORTCUT_DIR_ANA}")
-    print("3. ZIP both of these folders.")
-    print("4. SEND both zip files to Ana.")
-    print("5. INSTRUCT Ana to:")
-    print(f"   a. Unzip the profiles EXACTLY to: {BASE_DIR_ANA}")
-    print("   b. Copy the shortcuts to her Desktop.")
+        automation_src = os.path.join(os.getcwd(), "dist", "Automation")
+    
+    # Selective Zip (Exclude Profiles to protect data)
+    create_subset_zip(
+        automation_src, 
+        ['Icons', 'Dashboards'], 
+        os.path.join(dist_dir, "Automation.zip")
+    )
+
+    # 4. Final Instructions
+    print("\n" + "="*80)
+    print("PROCESS COMPLETE! READY TO DEPLOY")
+    print("="*80)
+    print(f"UNIVERSAL DISTRIBUTION CREATED:")
+    print(f"  --> {dist_dir}")
+    print("\nContains: Automation.zip + Shortcuts.zip + SETUP_TEAM.bat")
     print("="*80 + "\n")
 
 if __name__ == "__main__":
