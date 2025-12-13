@@ -1,68 +1,45 @@
 # Client Browser Setup
 
-Workshop folder for the Client Browser project that creates custom Chrome browser profiles and desktop shortcuts with unique icons for each client.
+Automated system to create custom Chrome browser profiles with desktop shortcuts for WeScope client systems.
 
-## Features
+## Quick Start
 
-- Fetches client data from BigQuery or uses demo data
-- Creates separate Chrome profiles for each client
-- Generates custom colored icons with client initials
-- Creates desktop shortcuts with custom icons
-- Supports both personal use and shared profiles (for Ana)
-
-## Prerequisites
-
-1. **Python 3.7+** - Download from [python.org](https://python.org) or install via Microsoft Store
-2. **Google Chrome** - Must be installed at the default location
-3. **Required Python packages** - Install with: `pip install -r requirements.txt`
-
-## Installation & Setup
-
-1. **Install Python** (if not already installed):
-   - Go to [python.org](https://python.org) and download Python 3.8 or later
-   - During installation, make sure to check "Add Python to PATH"
-
-2. **Install dependencies**:
-   ```bash
-   cd workshop/client-browser
-   pip install -r requirements.txt
-   ```
-
-3. **Run the setup script**:
+1. **Run the generator** (admin machine only):
    ```bash
    python client_browser_setup.py
    ```
 
-   Or use the provided batch file:
-   ```bash
-   run_setup.bat
-   ```
+2. **Distribute**: Zip `For_Team_Complete/` and send to team members.
 
-## What It Does
+3. **Team installs**: Run `SETUP_TEAM.bat` as Administrator.
 
-1. **Fetches client data** from BigQuery (or uses demo data if BigQuery is unavailable)
-2. **Creates Chrome profiles** for each client in:
-   - `C:\Automation\My_Profiles\` (for personal use)
-   - `C:\Automation\Ana_Profiles\` (for shared use)
-3. **Generates custom icons** with:
-   - Unique colors based on client name
-   - Client initials as text
-   - Multiple sizes (256x256, 128x128, 64x64, 32x32, 16x16)
-4. **Creates desktop shortcuts** with custom icons for easy access
+## Files
 
-## Generated Files
+| File | Purpose |
+|------|---------|
+| `client_browser_setup.py` | Main Python script - fetches data, generates shortcuts |
+| `SETUP_TEAM.bat` | Universal installer for team members |
+| `subscription_reference.md` | Auto-generated subscription ID reference |
+| `requirements.txt` | Python dependencies |
 
-- **Icons**: Stored in `client_icons/` folder as `.ico` files
-- **Shortcuts**: Created on your Desktop and in `For_Ana_Desktop/` folder
-- **Profiles**: Chrome user data directories for each client
+## Generated Output
 
-## Troubleshooting
+| Folder | Purpose |
+|--------|---------|
+| `For_Team_Complete/` | **Distribution package** - zip and send this |
+| `For_Team_Desktop/` | Staging folder (intermediate, gitignored) |
 
-- **"Python not found"**: Install Python and add it to your PATH
-- **Missing dependencies**: Run `pip install -r requirements.txt`
-- **Chrome not found**: Ensure Chrome is installed in the default location
-- **Permission errors**: Run as Administrator if needed
+## Features
 
-## Demo Mode
+- Fetches client data from BigQuery
+- Generates sorted shortcuts (1-PRO, 2-KEY, 3-NEW, 4-LEG)
+- Creates unified `C:\Automation\Profiles` directory
+- Installs Chrome extensions via policy (Loom, Translate)
+- Opens WeScope portal as last tab
+- Handles white-label URL fixes (NextGear, MICA, etc.)
 
-If BigQuery is not available or you're on a non-Windows system, the script runs in demo mode with mock data.
+## Requirements
+
+- Python 3.8+
+- Google Chrome
+- BigQuery access (via `gcloud auth application-default login`)
