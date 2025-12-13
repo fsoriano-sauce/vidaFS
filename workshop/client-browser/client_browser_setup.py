@@ -41,8 +41,9 @@ if IS_WINDOWS:
     BASE_DIR_SELF = BASE_DIR_PROFILES # Legacy/Universal
     BASE_DIR_ANA = BASE_DIR_PROFILES  # Legacy/Universal
     
-    SHORTCUT_DIR_TEAM = os.path.join(os.getcwd(), "For_Team_Desktop")
-    SHORTCUT_DIR_ANA = SHORTCUT_DIR_TEAM # Reuse var for cleaner diff, or just update main usage
+    SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+    SHORTCUT_DIR_TEAM = os.path.join(SCRIPT_DIR, "For_Team_Desktop")
+    SHORTCUT_DIR_ANA = SHORTCUT_DIR_TEAM
     
     CHROME_EXE_PATH = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
     ICON_DIR = r"C:\Automation\Icons"
@@ -692,23 +693,13 @@ def main(limit_clients: int = None):
             icon_path=icon_path
         )
     
-    # 3. Packaging for Ana (Automated)
-    print("\n" + "="*80)
-    print("PACKAGING FOR ANA...")
-    print("="*80)
-    
-    # Destination folder
-    dist_dir = os.path.join(os.getcwd(), "For_Ana_Complete")
-    if not os.path.exists(dist_dir):
-        os.makedirs(dist_dir)
-    
     # 3. Packaging for Team (Unified)
     print("\n" + "="*80)
     print("PACKAGING FOR TEAM (UNIVERSAL)...")
     print("="*80)
     
-    # Destination folder
-    dist_dir = os.path.join(os.getcwd(), "For_Team_Complete")
+    # Destination folder (inside script directory)
+    dist_dir = os.path.join(SCRIPT_DIR, "For_Team_Complete")
     if not os.path.exists(dist_dir):
         os.makedirs(dist_dir)
     

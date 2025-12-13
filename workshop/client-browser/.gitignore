@@ -1,9 +1,20 @@
-# Ignore generated artifacts
-*.zip
-*.lnk
-For_Ana_Desktop/
-For_Frankie_Desktop/
-client_icons/*.ico
-!client_icons/WeScope_Standard.ico
+# Python
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+*.egg
+
+# Output directories (created at runtime)
+dist/
+For_Team_Complete/
+For_Team_Desktop/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
