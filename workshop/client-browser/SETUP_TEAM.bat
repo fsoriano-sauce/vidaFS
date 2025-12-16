@@ -86,11 +86,10 @@ echo   [OK] Automation folder installed to C:\Automation
 echo.
 echo [Step 2.5] Configuring Chrome Extensions...
 REM NOTE: Registry policies are disabled to prevent impacting personal Chrome profiles.
-REM If extensions (Loom, ClickOnce, etc.) are required, they must be installed manually or 
-REM enabled via a different mechanism that does not affect global HKCU policies.
-REM reg add "HKCU\Software\Policies\Google\Chrome\ExtensionInstallForcelist" /v "901" /t REG_SZ /d "hhoilbbpbbfbihpafjobnfffffoocoba;https://clients2.google.com/service/update2/crx" /f >nul 2>&1
-REM reg add "HKCU\Software\Policies\Google\Chrome\ExtensionInstallForcelist" /v "902" /t REG_SZ /d "ghonblphoimcehigdfdmomaochonfobc;https://clients2.google.com/service/update2/crx" /f >nul 2>&1
-echo   [SKIPPED] Global Extension Policy (User Request)
+REM CLEANUP: We actively remove any old policies that might be sticking.
+reg delete "HKCU\Software\Policies\Google\Chrome\ExtensionInstallForcelist" /v "901" /f >nul 2>&1
+reg delete "HKCU\Software\Policies\Google\Chrome\ExtensionInstallForcelist" /v "902" /f >nul 2>&1
+echo   [OK] Global Extension Policy Cleaned (Personal Profiles Protected)
 
 echo.
 echo [Step 3/3] Installing Shortcuts to Desktop...
