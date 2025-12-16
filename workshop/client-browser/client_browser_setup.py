@@ -63,10 +63,12 @@ BQ_PROJECT_ID = "xano-fivetran-bq"
 BQ_QUERY = """
     SELECT
         c.full_name as client_name,
-        sa.link as login_url,
+        COALESCE(NULLIF(l.custom_link, ''), sa.link) as login_url,
+        sa.name as system_name,
         c.key_and_pro_account as is_key_account,
         c.subscription_id,
-        s.subscription_name
+        s.subscription_name,
+        l.api_key
     FROM
         `xano-fivetran-bq.staging_xano.ptl_client` c
     JOIN
@@ -84,10 +86,12 @@ BQ_QUERY = """
     WHERE
         c.suspended = false
         AND c._fivetran_deleted = false
+        AND l._fivetran_deleted = false
+        AND sa._fivetran_deleted = false
         AND c.subscription_id IN (2, 3, 4, 5, 8, 9, 12, 13, 14, 15, 16) -- Updated validation list
         AND sa.link IS NOT NULL
         AND sa.link != ''
-        AND (sa.client_id IS NULL OR sa.client_id = '')  -- Exclude API-connected systems
+        # AND (sa.client_id IS NULL OR sa.client_id = '')  -- Exclude API-connected systems (commented out to rely on api_key check)
 """
 
 # Icon Settings
@@ -299,14 +303,30 @@ def categorize_system(url: str) -> int:
     # Priority 5: Everything else
     return 5
 
-def clean_target_url(url: str) -> str:
+def clean_target_url(url: str, system_name: str = "") -> str:
     """
     Removes specific login paths from the URL so the browser lands on the dashboard
     if the session is already active. Also applies known URL fixes/overrides.
     """
     # =========================================================================
-    # URL OVERRIDES - Fix known bad URLs from source data
+    # SYSTEM-BASED OVERRIDES (Highest Priority - Check Name First)
     # =========================================================================
+    
+    # Xactimate (Online) - Force optimized App URL
+    # Catches generic "identity.verisk.com" links if the system is Xactimate
+    if "Xactimate" in system_name:
+        print(f"  [URL Replacement] Xactimate (System Name Match): -> xactimate.com/xor/app/")
+        return "https://xactimate.com/xor/app/"
+
+    # XactAnalysis - Force optimized Start URL
+    if "XactAnalysis" in system_name:
+        print(f"  [URL Replacement] XactAnalysis (System Name Match): -> start.jsp")
+        return "https://www.xactanalysis.com/apps/cxa/start.jsp"
+    if "micaexchange.com" in url.lower():
+        # Keep custom MICA URLs (they usually have specific paths like /pdr/ or /rainbow/)
+        # But ensure they are clean
+        pass
+    
     URL_OVERRIDES = {
         # Docusketch: portal_2 doesn't exist, should be portal
         "app.docusketch.com/portal_2": "app.docusketch.com/portal",
@@ -320,11 +340,13 @@ def clean_target_url(url: str) -> str:
     # Xactimate/XactAnalysis - Verisk login URLs should go directly to the app
     if "identity.verisk.com" in url.lower():
         if "xactimate" in url.lower() or "xor.xactimate" in url.lower():
-            print(f"  [URL Replacement] Xactimate: identity.verisk.com -> xactimate.com")
-            return "https://xactimate.com/xor/app/instance-selection"
+            # Use the app root, which handles SSO redirection better than deep links
+            print(f"  [URL Replacement] Xactimate: -> xactimate.com/xor/app/")
+            return "https://xactimate.com/xor/app/"
         elif "xactanalysis" in url.lower():
-            print(f"  [URL Replacement] XactAnalysis: identity.verisk.com -> xactanalysis.com")
-            return "https://www.xactanalysis.com"
+            # User confirmed this specific URL handles re-launching best
+            print(f"  [URL Replacement] XactAnalysis: -> start.jsp")
+            return "https://www.xactanalysis.com/apps/cxa/start.jsp"
         else:
             # Generic Verisk - just go to settings (or the base)
             print(f"  [URL Replacement] Verisk: stripping login params")
@@ -332,10 +354,19 @@ def clean_target_url(url: str) -> str:
     
     # Symbility/Claims Workspace - go directly to claims page, not login
     # NOTE: Symbility expires sessions on browser close (like MICA)
-    if "symbility.net" in url.lower():
+    if "symbility.net" in url.lower() and "symbility.net/ux/site/#/login" not in url.lower():
+        # Only override if it's NOT already a specific login URL (some custom links might be specific)
+        # But generally we want #/claims
         print(f"  [URL Replacement] Symbility: -> #/claims")
         return "https://www.symbility.net/ux/site/#/claims"
     
+    # PSA (Canam Systems) - Fix error page to login page
+    if "psarcweb.com" in url.lower():
+        # User reported Error page: https://psarcweb.com/PSAWeb/Error?aspxerrorpath=/PSAWeb/Account
+        # Correct Login page: https://psarcweb.com/PSAWeb/Account/Login
+        print(f"  [URL Replacement] PSA: -> Account/Login")
+        return "https://psarcweb.com/PSAWeb/Account/Login"
+
     # RESTORE365 - go to the post-login page, not the login page
     # The /User/ path shows "Hello World" which is broken
     # RESTORE365 - go to the post-login page
@@ -404,10 +435,8 @@ def fetch_client_data(limit_clients: int = None) -> Dict[str, Dict]:
     if DEMO_MODE and not HAS_BIGQUERY:
         print("Warning: 'google-cloud-bigquery' not found. Using MOCK data for demo.")
         mock_data = {
-            "State Farm": {"urls": ["https://login.statefarm.com", "https://claims.statefarm.com/login"], "is_key_account": True},
-            "Allstate": {"urls": ["https://agent.allstate.com/signin"], "is_key_account": False},
-            "Farmers": {"urls": ["https://portal.farmers.com/auth/login", "https://billing.farmers.com"], "is_key_account": False},
-            "Docusketch": {"urls": ["https://app.docusketch.com/login"], "is_key_account": True}
+            "State Farm": {"systems": [{"url": "https://login.statefarm.com", "name": "State Farm"}, {"url": "https://claims.statefarm.com/login", "name": "Claims"}], "is_key_account": True},
+            "Allstate": {"systems": [{"url": "https://agent.allstate.com/signin", "name": "Allstate"}], "is_key_account": False},
         }
         if limit_clients:
             client_names = list(mock_data.keys())[:limit_clients]
@@ -420,10 +449,16 @@ def fetch_client_data(limit_clients: int = None) -> Dict[str, Dict]:
         query_job = client.query(BQ_QUERY)
         results = query_job.result()
 
-        data = defaultdict(lambda: {"urls": [], "is_key_account": False, "subscription_id": None, "subscription_name": "Unknown"})
+        data = defaultdict(lambda: {"systems": [], "is_key_account": False, "subscription_id": None, "subscription_name": "Unknown"})
         for row in results:
+            # Exclude if API Key is present, UNLESS it is Symbility
+            if row.api_key:
+                is_symbility = "symbility" in str(row.login_url).lower()
+                if not is_symbility:
+                    continue
+
             if row.login_url:
-                data[row.client_name]["urls"].append(row.login_url)
+                data[row.client_name]["systems"].append({"url": row.login_url, "name": row.system_name})
                 # If 'true' string or boolean True in BQ, handle appropriately
                 # keys in BQ are often strings 'true' or 'false'
                 is_key = str(row.is_key_account).lower() == 'true'
@@ -445,8 +480,7 @@ def fetch_client_data(limit_clients: int = None) -> Dict[str, Dict]:
         if DEMO_MODE:
             print(f"BQ Fetch Failed ({e}). Switching to MOCK data for demo.")
             mock_data = {
-                "State Farm": {"urls": ["https://login.statefarm.com"], "is_key_account": True},
-                "Allstate": {"urls": ["https://agent.allstate.com"], "is_key_account": False}
+                "State Farm": {"systems": [{"url": "https://login.statefarm.com", "name": "State Farm"}], "is_key_account": True},
             }
             if limit_clients:
                 client_names = list(mock_data.keys())[:limit_clients]
@@ -621,7 +655,7 @@ def main(limit_clients: int = None):
 
     # 2. Iterate and Process
     for client_name, data in clients_data.items():
-        urls = data["urls"]
+        systems = data["systems"]
         is_key_account = data["is_key_account"]
         subscription_id = data.get("subscription_id")
         
@@ -632,14 +666,25 @@ def main(limit_clients: int = None):
         
         # Clean URLs for the shortcut arguments
         # We want the shortcut to open the dashboard, not the login page
-        cleaned_urls = [clean_target_url(u) for u in urls]
+        cleaned_urls = []
+        seen_urls = set()
+        for sys_obj in systems:
+            raw_url = sys_obj["url"]
+            sys_name = sys_obj["name"]
+            cleaned_url = clean_target_url(raw_url, sys_name)
+            
+            # Deduplication: Prevent multiple tabs for the exact same URL
+            if cleaned_url not in seen_urls:
+                cleaned_urls.append(cleaned_url)
+                seen_urls.add(cleaned_url)
         
         # Sort URLs by category (CRM first, then docs, then estimating, etc.)
         cleaned_urls_sorted = sorted(cleaned_urls, key=lambda url: categorize_system(url))
         
         # EXCLUSIONS: Remove API-integrated systems even if they have credentials
         # These systems are typically accessed via API and don't need browser tabs
-        excluded_keywords = ['matterport', 'hover', 'eagleview', 'westhill', 'jobnimbus']
+        # (Legacy keyword check - now mostly handled by BQ API Key check)
+        excluded_keywords = ['jobnimbus']
         final_urls = []
         for url in cleaned_urls_sorted:
             is_excluded = False
@@ -679,7 +724,23 @@ def main(limit_clients: int = None):
         if not os.path.exists(profile_path):
              os.makedirs(profile_path)
              
-        chrome_args = f'--user-data-dir="{profile_path}" --profile-directory="Default" {url_args}'
+        # Add Extensions if they exist
+        extensions_path = r"C:\Automation\Extensions"
+        load_extensions = []
+        if os.path.exists(extensions_path):
+            # Check for specific extensions
+            ext_list = ["Loom", "Xactware_ClickOnce"]
+            for ext in ext_list:
+                ep = os.path.join(extensions_path, ext)
+                if os.path.exists(ep):
+                    load_extensions.append(ep)
+        
+        ext_args = ""
+        if load_extensions:
+            ext_str = ",".join(load_extensions)
+            ext_args = f'--load-extension="{ext_str}"'
+
+        chrome_args = f'--user-data-dir="{profile_path}" --profile-directory="Default" {ext_args} {url_args}'
         
         if not os.path.exists(SHORTCUT_DIR_TEAM):
             os.makedirs(SHORTCUT_DIR_TEAM)
@@ -737,9 +798,14 @@ def main(limit_clients: int = None):
         automation_src = os.path.join(os.getcwd(), "dist", "Automation")
     
     # Selective Zip (Exclude Profiles to protect data)
+    # Include Extensions if they exist
+    folders_to_zip = ['Icons', 'Dashboards']
+    if os.path.exists(os.path.join(automation_src, 'Extensions')):
+        folders_to_zip.append('Extensions')
+
     create_subset_zip(
         automation_src, 
-        ['Icons', 'Dashboards'], 
+        folders_to_zip, 
         os.path.join(dist_dir, "Automation.zip")
     )
 
