@@ -393,6 +393,11 @@ def clean_target_url(url: str, system_name: str = "") -> str:
     if "solitaire-ngs.net" in url.lower():
          print(f"  [URL Replacement] Solitaire: -> uPostLogin.aspx")
          return "https://solitaire-ngs.net/DKI/Module/User/uPostLogin.aspx"
+
+    # Westhill Global - Fix incorrect "app.westhillglobal.com" to "login.westhillglobal.com"
+    if "app.westhillglobal.com" in url.lower():
+        print(f"  [URL Replacement] Westhill: app. -> login.")
+        return url.lower().replace("app.westhillglobal.com", "login.westhillglobal.com")
     
     # Apply URL overrides first
     clean_url = url
