@@ -16,8 +16,15 @@ Automated system to create custom Chrome browser profiles with desktop shortcuts
 
 ### For Team Members (Installing)
 
-1. **From manual download**: Run `SETUP_TEAM.bat` as Administrator
-2. **From network share**: Run `UPDATE_FROM_NETWORK.bat` as Administrator (edit script to set network path)
+**First-Time Setup:**
+1. Run `SETUP_TEAM.bat` as Administrator (installs shortcuts to Desktop)
+
+**Optional - Enable Auto-Updates:**
+2. Share `For_Team_Complete` via Google Drive (or similar sync service)
+3. Team members run `SETUP_AUTO_UPDATE.bat` and enter their synced folder path
+4. Updates check every 4 hours and install automatically in the background
+
+See `TEAM_SETUP_GUIDE.md` for detailed instructions.
 
 ### Troubleshooting
 
@@ -28,16 +35,29 @@ If Chrome shows "managed by your organization" or password manager doesn't work:
 
 ## Files
 
+### Admin Files (Package Generation)
 | File | Purpose |
 |------|---------|
-| `client_browser_setup.py` | Main Python script - fetches data, generates shortcuts |
-| `SETUP_TEAM.bat` | Universal installer for team members (cleans policies, installs shortcuts) |
+| `client_browser_setup.py` | Main Python script - fetches data from BigQuery, generates shortcuts |
 | `REFRESH_PACKAGES.bat` | Quick helper to regenerate `For_Team_Complete/` folder |
-| `CLEANUP_POLICIES.bat` | Removes Chrome "managed by organization" policies |
-| `UPDATE_FROM_NETWORK.bat` | Auto-pulls updates from network share (requires network path setup) |
 | `download_extensions.py` | Helper to download Chrome extensions for side-loading |
-| `subscription_reference.md` | Auto-generated subscription ID reference |
 | `requirements.txt` | Python dependencies |
+
+### Team Files (Distribution)
+| File | Purpose |
+|------|---------|
+| `SETUP_TEAM.bat` | Main installer (cleans policies, installs shortcuts) |
+| `SETUP_AUTO_UPDATE.bat` | One-time setup for automatic background updates |
+| `CLEANUP_POLICIES.bat` | Troubleshooting - removes "managed by organization" policies |
+| `TEAM_SETUP_GUIDE.md` | Complete guide for team members |
+| `version.txt` | Auto-generated version timestamp for update tracking |
+
+### Generated Files
+| File | Purpose |
+|------|---------|
+| `subscription_reference.md` | Auto-generated subscription ID reference |
+| `Automation.zip` | Icons, Dashboards, Extensions (extracted to `C:\Automation\`) |
+| `Shortcuts.zip` | Desktop shortcuts (extracted to `Desktop\Client Systems Shortcuts\`) |
 
 ## Generated Output
 

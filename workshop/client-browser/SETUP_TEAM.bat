@@ -84,14 +84,24 @@ popd
 echo   [OK] Automation folder installed to C:\Automation
 
 echo.
-echo [Step 2.5] Configuring Chrome Extensions...
-REM NOTE: Registry policies are disabled to prevent impacting personal Chrome profiles.
-REM CLEANUP: We actively remove any old policies that might be sticking.
+echo [Step 2.5] Configuring Chrome Extensions and Policy Cleanup...
+REM IMPORTANT: We proactively clean Chrome policies to ensure:
+REM   1. Client browser profiles have correct extensions (side-loaded, not forced globally)
+REM   2. Personal Chrome profiles remain untouched and not "managed by organization"
+REM   3. Chrome Password Manager and other features work normally in all profiles
+
 reg delete "HKCU\Software\Policies\Google\Chrome\ExtensionInstallForcelist" /f >nul 2>&1
 reg delete "HKCU\Software\Policies\Google\Chrome" /v "ExtensionInstallBlacklist" /f >nul 2>&1
 reg delete "HKCU\Software\Policies\Google\Chrome" /v "ExtensionInstallWhitelist" /f >nul 2>&1
-echo   [OK] Global Extension Policy Cleaned (Personal Profiles Protected)
-echo NOTE: If Chrome still shows 'managed by organization', restart all Chrome windows.
+
+echo   [OK] Chrome Policy Cleanup Complete
+echo   [INFO] Personal Chrome profiles are protected
+echo   [INFO] Extensions will load only in client browser profiles
+echo.
+echo   NOTE: If Chrome still shows 'managed by organization' after setup:
+echo         1. Close ALL Chrome windows (check Task Manager)
+echo         2. Restart Chrome
+echo         3. If issue persists, run CLEANUP_POLICIES.bat
 
 echo.
 echo [Step 3/3] Installing Shortcuts to Desktop...
