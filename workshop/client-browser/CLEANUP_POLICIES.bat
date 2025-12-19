@@ -18,21 +18,23 @@ if %errorlevel% neq 0 (
 
 echo Removing legacy extension policies...
 
-REM Remove Loom Policy
-reg delete "HKCU\Software\Policies\Google\Chrome\ExtensionInstallForcelist" /v "901" /f >nul 2>&1
+REM Remove entire ExtensionInstallForcelist key
+reg delete "HKCU\Software\Policies\Google\Chrome\ExtensionInstallForcelist" /f >nul 2>&1
 if %errorlevel% equ 0 (
-    echo   [OK] Removed Policy 901 (Loom)
+    echo   [OK] Removed ExtensionInstallForcelist key
 ) else (
-    echo   [INFO] Policy 901 not found or already removed.
+    echo   [INFO] ExtensionInstallForcelist key not found or already removed.
 )
 
-REM Remove ClickOnce Policy
+REM Also try removing individual policies (legacy cleanup)
+reg delete "HKCU\Software\Policies\Google\Chrome\ExtensionInstallForcelist" /v "901" /f >nul 2>&1
 reg delete "HKCU\Software\Policies\Google\Chrome\ExtensionInstallForcelist" /v "902" /f >nul 2>&1
-if %errorlevel% equ 0 (
-    echo   [OK] Removed Policy 902 (ClickOnce)
-) else (
-    echo   [INFO] Policy 902 not found or already removed.
-)
+
+REM Remove any other Chrome policies that might cause "managed" state
+reg delete "HKCU\Software\Policies\Google\Chrome" /v "ExtensionInstallBlacklist" /f >nul 2>&1
+reg delete "HKCU\Software\Policies\Google\Chrome" /v "ExtensionInstallWhitelist" /f >nul 2>&1
+
+echo   [OK] Policy cleanup complete
 
 REM Refresh Group Policy (force update)
 gpupdate /force >nul 2>&1
@@ -44,3 +46,9 @@ echo Please restart all Chrome windows for changes to take effect.
 echo ================================================================================
 echo.
 pause
+
+
+
+
+
+
