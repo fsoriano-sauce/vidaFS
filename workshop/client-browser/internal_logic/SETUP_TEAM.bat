@@ -13,12 +13,14 @@ echo.
 REM 1. Check Administrator Privileges
 net session >nul 2>&1
 if %errorlevel% neq 0 (
-    echo [ERROR] This script must be run as Administrator!
+    echo [ERROR] This script MUST be run as Administrator!
     echo.
-    echo Right-click this file and select "Run as Administrator"
+    echo Please right-click the file and select "Run as Administrator".
+    echo.
     pause
     exit /b 1
 )
+echo   [OK] Administrator privileges confirmed.
 
 REM 2. Environment Setup
 set SCRIPT_DIR=%~dp0
@@ -31,8 +33,9 @@ cd /d "%SCRIPT_DIR%"
 
 REM 3. File Verification
 echo [Step 1/4] Verifying installation files...
-if not exist "Automation.zip" ( echo [ERROR] Automation.zip missing! & pause & exit /b 1 )
-if not exist "Shortcuts.zip" ( echo [ERROR] Shortcuts.zip missing! & pause & exit /b 1 )
+echo   Working Dir: %CD%
+if not exist "Automation.zip" ( echo [ERROR] Automation.zip missing in %CD%! & pause & exit /b 1 )
+if not exist "Shortcuts.zip" ( echo [ERROR] Shortcuts.zip missing in %CD%! & pause & exit /b 1 )
 echo   [OK] Found Automation.zip and Shortcuts.zip
 
 REM 4. Chrome Policy Cleanup (Proactive Fix)
