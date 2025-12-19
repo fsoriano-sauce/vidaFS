@@ -4,21 +4,38 @@ Automated system to create custom Chrome browser profiles with desktop shortcuts
 
 ## Quick Start
 
-1. **Run the generator** (admin machine only):
-   ```bash
-   python client_browser_setup.py
-   ```
+### For Admins (Generating Packages)
 
-2. **Distribute**: Zip `For_Team_Complete/` and send to team members.
+1. **Run the generator**:
+   - Option A: Double-click `REFRESH_PACKAGES.bat`
+   - Option B: Run `python client_browser_setup.py` manually
 
-3. **Team installs**: Run `SETUP_TEAM.bat` as Administrator.
+2. **Distribute**:
+   - **Method 1 (Manual)**: Zip `For_Team_Complete/` and send to team members
+   - **Method 2 (Network Share)**: Copy `For_Team_Complete/` to a shared network location
+
+### For Team Members (Installing)
+
+1. **From manual download**: Run `SETUP_TEAM.bat` as Administrator
+2. **From network share**: Run `UPDATE_FROM_NETWORK.bat` as Administrator (edit script to set network path)
+
+### Troubleshooting
+
+If Chrome shows "managed by your organization" or password manager doesn't work:
+1. Run `CLEANUP_POLICIES.bat` as Administrator
+2. Close ALL Chrome windows (check Task Manager)
+3. Restart Chrome
 
 ## Files
 
 | File | Purpose |
 |------|---------|
 | `client_browser_setup.py` | Main Python script - fetches data, generates shortcuts |
-| `SETUP_TEAM.bat` | Universal installer for team members |
+| `SETUP_TEAM.bat` | Universal installer for team members (cleans policies, installs shortcuts) |
+| `REFRESH_PACKAGES.bat` | Quick helper to regenerate `For_Team_Complete/` folder |
+| `CLEANUP_POLICIES.bat` | Removes Chrome "managed by organization" policies |
+| `UPDATE_FROM_NETWORK.bat` | Auto-pulls updates from network share (requires network path setup) |
+| `download_extensions.py` | Helper to download Chrome extensions for side-loading |
 | `subscription_reference.md` | Auto-generated subscription ID reference |
 | `requirements.txt` | Python dependencies |
 
@@ -31,12 +48,14 @@ Automated system to create custom Chrome browser profiles with desktop shortcuts
 
 ## Features
 
-- Fetches client data from BigQuery
-- Generates sorted shortcuts (1-PRO, 2-KEY, 3-NEW, 4-LEG)
-- Creates unified `C:\Automation\Profiles` directory
-- Installs Chrome extensions via policy (Loom, Translate)
-- Opens WeScope portal as last tab
-- Handles white-label URL fixes (NextGear, MICA, etc.)
+- **Data-Driven**: Fetches client systems from BigQuery (no hardcoding)
+- **Smart Sorting**: Shortcuts prefixed by tier (1-PRO, 2-KEY, 3-NEW, 4-LEG)
+- **Profile Management**: Creates isolated Chrome profiles in `C:\Automation\Profiles`
+- **Safe Extensions**: Side-loads extensions per profile (Loom, ClickOnce) - does NOT impact personal browsers
+- **URL Optimization**: Fixes known SSO issues (Xactimate, PSA, Westhill, etc.)
+- **Deduplication**: Prevents duplicate tabs for the same system
+- **Policy Protection**: Actively cleans registry policies to protect personal Chrome profiles
+- **WeScope Portal**: Always opens as the last tab
 
 ## Requirements
 

@@ -87,9 +87,11 @@ echo.
 echo [Step 2.5] Configuring Chrome Extensions...
 REM NOTE: Registry policies are disabled to prevent impacting personal Chrome profiles.
 REM CLEANUP: We actively remove any old policies that might be sticking.
-reg delete "HKCU\Software\Policies\Google\Chrome\ExtensionInstallForcelist" /v "901" /f >nul 2>&1
-reg delete "HKCU\Software\Policies\Google\Chrome\ExtensionInstallForcelist" /v "902" /f >nul 2>&1
+reg delete "HKCU\Software\Policies\Google\Chrome\ExtensionInstallForcelist" /f >nul 2>&1
+reg delete "HKCU\Software\Policies\Google\Chrome" /v "ExtensionInstallBlacklist" /f >nul 2>&1
+reg delete "HKCU\Software\Policies\Google\Chrome" /v "ExtensionInstallWhitelist" /f >nul 2>&1
 echo   [OK] Global Extension Policy Cleaned (Personal Profiles Protected)
+echo NOTE: If Chrome still shows 'managed by organization', restart all Chrome windows.
 
 echo.
 echo [Step 3/3] Installing Shortcuts to Desktop...
