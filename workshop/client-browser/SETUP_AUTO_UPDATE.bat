@@ -73,12 +73,14 @@ echo   [OK] Auto-updater created
 
 REM Create scheduled task
 echo Creating scheduled task...
-schtasks /create /tn "WeScope Browser Auto-Update" /tr "\"%AUTO_UPDATE_SCRIPT%\"" /sc hourly /mo 4 /rl highest /f >nul 2>&1
+schtasks /create /tn "WeScope Browser Auto-Update" /tr "\"%AUTO_UPDATE_SCRIPT%\"" /sc hourly /mo 4 /rl highest /f
 
 if %errorlevel% equ 0 (
-    echo   [OK] Scheduled task created (runs every 4 hours)
+    echo   [OK] Scheduled task created (runs every 4 hours^)
 ) else (
-    echo   [WARNING] Failed to create scheduled task
+    echo.
+    echo   [ERROR] Failed to create scheduled task. Error code: %errorlevel%
+    echo   Please check the error message above.
 )
 
 echo.
@@ -89,3 +91,5 @@ echo Your browser shortcuts will now update automatically in the background.
 echo You can view the update log at: C:\Automation\update.log
 echo.
 pause
+
+

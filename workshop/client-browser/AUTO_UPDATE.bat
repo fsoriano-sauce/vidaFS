@@ -76,3 +76,5 @@ cd /d "%USERPROFILE%"
 rmdir /s /q "%TEMP_DIR%" 2>nul
 
 exit /b 0
+
+

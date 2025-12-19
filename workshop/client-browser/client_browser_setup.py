@@ -769,19 +769,24 @@ def main(limit_clients: int = None):
     if not os.path.exists(dist_dir):
         os.makedirs(dist_dir)
     
-    # Files to copy/zip
-    setup_script_src = os.path.join(os.path.dirname(__file__), "SETUP_TEAM.bat")
-    
-    # 1. Copy Setup Script
+    # Files to copy
+    files_to_copy = {
+        "SETUP_TEAM.bat": os.path.join(os.path.dirname(__file__), "SETUP_TEAM.bat"),
+        "SETUP_AUTO_UPDATE.bat": os.path.join(os.path.dirname(__file__), "SETUP_AUTO_UPDATE.bat"),
+        "CLEANUP_POLICIES.bat": os.path.join(os.path.dirname(__file__), "CLEANUP_POLICIES.bat"),
+        "TEAM_SETUP_GUIDE.md": os.path.join(os.path.dirname(__file__), "TEAM_SETUP_GUIDE.md")
+    }
+
     import shutil
-    try:
-        if os.path.exists(setup_script_src):
-            shutil.copy2(setup_script_src, dist_dir)
-            print(f"[OK] Copied SETUP_TEAM.bat to {dist_dir}")
-        else:
-            print(f"[WARNING] Setup script not found at {setup_script_src}")
-    except Exception as e:
-        print(f"[ERROR] Copy failed: {e}")
+    for filename, src_path in files_to_copy.items():
+        try:
+            if os.path.exists(src_path):
+                shutil.copy2(src_path, dist_dir)
+                print(f"[OK] Copied {filename} to {dist_dir}")
+            else:
+                print(f"[WARNING] File not found: {filename}")
+        except Exception as e:
+            print(f"[ERROR] Copy failed for {filename}: {e}")
 
     # 2. Zip Shortcuts
     print("[-] Zipping Shortcuts...")

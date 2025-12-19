@@ -122,3 +122,5 @@ Simply don't run `SETUP_AUTO_UPDATE.bat`. You can always update manually by:
 ## 🆘 Need Help?
 
 Contact Frank or check the update log: `C:\Automation\update.log`
+
+
