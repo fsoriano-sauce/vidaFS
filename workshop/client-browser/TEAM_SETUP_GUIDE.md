@@ -2,17 +2,18 @@
 
 ## 🚀 One-Time Setup (New Team Members)
 
-1.  **Open Google Drive** on your computer and go to:
-    `G:\Shared drives\Client Shortcuts\For_Team_Complete`
-2.  Right-click **`SETUP_TEAM.bat`** and select **Run as Administrator**.
-3.  **When prompted**, type **`Y`** to enable automatic background updates.
-4.  **Done!** Your shortcuts are installed in `Desktop\Client Systems Shortcuts` and will now update themselves automatically every 15 minutes.
+1.  **Download** the **`WESCOPE_BROWSER_INSTALLER.bat`** file sent by Frank.
+2.  Save it anywhere (Downloads or Desktop).
+3.  Right-click the file and select **Run as Administrator**.
+4.  **When prompted**, type **`Y`** to enable automatic background updates.
+5.  **Done!** Your shortcuts are installed in `Desktop\Client Systems Shortcuts` and will now update themselves automatically every 15 minutes.
 
 ---
 
 ## 🔄 How it Works
 
-- **No more downloads**: You just run the script once from Google Drive.
+- **Launcher Experience**: The file you download is a "launcher" that reaches out to the WeScope Google Drive to install the latest files.
+- **No Manual Downloads**: You don't need to manage zip files or folders.
 - **Auto-Updates**: A hidden task checks for new client systems every 15 minutes.
 - **Safe**: Your saved passwords and work profiles are never touched.
 - **Silent**: Updates happen in the background without popups.
@@ -21,26 +22,15 @@
 
 ## 🩹 Troubleshooting
 
+### "Google Drive folder not found" error
+1. Ensure **Google Drive for Desktop** is running and you are signed in.
+2. Ensure the **'Client Shortcuts'** shared drive is visible in your Windows Explorer.
+3. Ensure your Google Drive is mounted as the **G:** drive (this is the default).
+
 ### Chrome shows "Managed by your organization"
-1. Run **`CLEANUP_POLICIES.bat`** as Administrator.
-2. Close all Chrome windows and restart.
-
-### Password Manager not saving passwords
-This is usually caused by the "Managed by organization" issue above. Follow the same steps.
-
----
-
-## 📁 File Locations
-
-| Location | Purpose |
-|----------|---------|
-| `Desktop\Client Systems Shortcuts\` | Your browser shortcuts (organized by tier) |
-| `C:\Automation\Profiles\` | Chrome profile data (passwords, history, etc.) |
-| `C:\Automation\Icons\` | Client icons |
-| `C:\Automation\Extensions\` | Side-loaded Chrome extensions (Loom, ClickOnce) |
-| `C:\Automation\AUTO_UPDATE.bat` | Auto-update script |
-| `C:\Automation\.version` | Current installed version |
-| `C:\Automation\update.log` | Update history log |
+1. Browse to `G:\Shared drives\Client Shortcuts\For_Team_Complete`
+2. Run **`CLEANUP_POLICIES.bat`** as Administrator.
+3. Close all Chrome windows and restart.
 
 ---
 
