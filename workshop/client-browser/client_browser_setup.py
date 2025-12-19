@@ -772,7 +772,6 @@ def main(limit_clients: int = None):
     # Files to copy
     files_to_copy = {
         "SETUP_TEAM.bat": os.path.join(os.path.dirname(__file__), "SETUP_TEAM.bat"),
-        "SETUP_AUTO_UPDATE.bat": os.path.join(os.path.dirname(__file__), "SETUP_AUTO_UPDATE.bat"),
         "CLEANUP_POLICIES.bat": os.path.join(os.path.dirname(__file__), "CLEANUP_POLICIES.bat"),
         "TEAM_SETUP_GUIDE.md": os.path.join(os.path.dirname(__file__), "TEAM_SETUP_GUIDE.md")
     }
@@ -830,6 +829,27 @@ def main(limit_clients: int = None):
     except Exception as e:
         print(f"[WARNING] Failed to create version file: {e}")
     
+    # --- AUTO-PUBLISH TO GOOGLE DRIVE (OPTIONAL) ---
+    # Update this path to your G-Drive shared folder
+    PUBLISH_PATH = r"G:\Shared drives\Client Shortcuts\For_Team_Complete"
+    if os.path.exists(os.path.dirname(PUBLISH_PATH)):
+        print(f"\nPublishing to Google Drive: {PUBLISH_PATH}...")
+        try:
+            if not os.path.exists(PUBLISH_PATH):
+                os.makedirs(PUBLISH_PATH)
+            
+            # Copy all files from dist_dir to PUBLISH_PATH
+            for item in os.listdir(dist_dir):
+                s = os.path.join(dist_dir, item)
+                d = os.path.join(PUBLISH_PATH, item)
+                if os.path.isfile(s):
+                    shutil.copy2(s, d)
+            print("[OK] Published successfully to Google Drive.")
+        except Exception as e:
+            print(f"[WARNING] Auto-publish failed: {e}")
+            print("You can still copy the files manually.")
+    # -----------------------------------------------
+
     # 5. Final Instructions
     print("\n" + "="*80)
     print("PROCESS COMPLETE! READY TO DEPLOY")
