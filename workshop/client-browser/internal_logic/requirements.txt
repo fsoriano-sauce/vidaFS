@@ -1,0 +1,8 @@
+google-cloud-bigquery
+selenium
+webdriver-manager
+pandas
+db-dtypes
+Pillow
+pywin32; sys_platform == 'win32'
+winshell; sys_platform == 'win32'
