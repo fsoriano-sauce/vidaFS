@@ -814,13 +814,24 @@ def main(limit_clients: int = None):
         os.path.join(dist_dir, "Automation.zip")
     )
 
-    # 4. Final Instructions
+    # 4. Generate version file (for auto-update tracking)
+    from datetime import datetime
+    version_timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+    version_file = os.path.join(dist_dir, "version.txt")
+    try:
+        with open(version_file, 'w') as f:
+            f.write(version_timestamp)
+        print(f"[OK] Generated version file: {version_timestamp}")
+    except Exception as e:
+        print(f"[WARNING] Failed to create version file: {e}")
+    
+    # 5. Final Instructions
     print("\n" + "="*80)
     print("PROCESS COMPLETE! READY TO DEPLOY")
     print("="*80)
     print(f"UNIVERSAL DISTRIBUTION CREATED:")
     print(f"  --> {dist_dir}")
-    print("\nContains: Automation.zip + Shortcuts.zip + SETUP_TEAM.bat")
+    print(f"\nContains: Automation.zip + Shortcuts.zip + SETUP_TEAM.bat + version.txt (v{version_timestamp})")
     print("="*80 + "\n")
 
 if __name__ == "__main__":

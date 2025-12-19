@@ -22,3 +22,7 @@ print(f"{'ID':<5} | {'Client':<30} | {'Sub ID':<10} | {'Child':<5} | {'Parent':<
 print("-" * 80)
 for row in results:
     print(f"{row.id:<5} | {row.full_name[:30]:<30} | {str(row.subscription_id):<10} | {str(row.child):<5} | {str(row.isparent):<5}")
+
+
+
+

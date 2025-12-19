@@ -29,3 +29,7 @@ print("-" * 100)
 for row in results:
     link = str(row.link)[:30]
     print(f"{row.full_name[:25]:<25} | {str(row.system_name)[:20]:<20} | {link:<30} | {str(row.login_deleted):<5} | {str(row.system_deleted):<5} | {str(row.suspended):<5}")
+
+
+
+
