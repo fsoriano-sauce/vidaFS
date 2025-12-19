@@ -1,130 +1,148 @@
 @echo off
 REM =============================================================================
-REM WeScope Team - Client Browser Setup Script (Universal)
+REM WeScope Team - Unified Client Browser Setup & Auto-Updater
 REM =============================================================================
+setlocal enabledelayedexpansion
 
 echo.
 echo ================================================================================
-echo WeScope Team Browser Setup
+echo WeScope Team Browser Setup (Unified Installer)
 echo ================================================================================
 echo.
 
-REM Check if running as administrator
+REM 1. Check Administrator Privileges
 net session >nul 2>&1
 if %errorlevel% neq 0 (
-    echo ERROR: This script must be run as Administrator!
+    echo [ERROR] This script must be run as Administrator!
+    echo.
     echo Right-click this file and select "Run as Administrator"
     pause
     exit /b 1
 )
 
+REM 2. Environment Setup
 set SCRIPT_DIR=%~dp0
+set AUTO_DIR=C:\Automation
+set PROFILE_DIR=%AUTO_DIR%\Profiles
+set SHORTCUT_TARGET_NAME=Client Systems Shortcuts
+set SHORTCUT_PATH=%USERPROFILE%\Desktop\%SHORTCUT_TARGET_NAME%
+
 cd /d "%SCRIPT_DIR%"
 
-echo [Step 1/3] Checking for required files...
-echo NOTE: Do NOT unzip the archives manually. This script processes them.
+REM 3. File Verification
+echo [Step 1/4] Verifying installation files...
+if not exist "Automation.zip" ( echo [ERROR] Automation.zip missing! & pause & exit /b 1 )
+if not exist "Shortcuts.zip" ( echo [ERROR] Shortcuts.zip missing! & pause & exit /b 1 )
+echo   [OK] Found Automation.zip and Shortcuts.zip
 
-if not exist "Automation.zip" (
-    echo [ERROR] Automation.zip not found!
-    pause
-    exit /b 1
-)
-if not exist "Shortcuts.zip" (
-    echo [ERROR] Shortcuts.zip not found!
-    pause
-    exit /b 1
-)
-echo   [OK] Files found
-
+REM 4. Chrome Policy Cleanup (Proactive Fix)
 echo.
-echo [Step 2/3] Installing Automation Assets (Icons, Dashboards)...
-REM Ensure Chrome is closed to release file locks (Gentle warning)
-echo NOTE: If you see "Access Denied" errors below, please close Chrome and retry.
-
-REM --------------------------------------------------------------------------
-REM MIGRATION LOGIC: Unify Profiles into C:\Automation\Profiles
-REM --------------------------------------------------------------------------
-if not exist "C:\Automation\Profiles" (
-    REM Check for legacy folders and rename them
-    if exist "C:\Automation\My_Profiles" (
-        echo [MIGRATION] Migrating 'My_Profiles' to 'Profiles'...
-        move "C:\Automation\My_Profiles" "C:\Automation\Profiles" >nul
-    ) else if exist "C:\Automation\Ana_Profiles" (
-        echo [MIGRATION] Migrating 'Ana_Profiles' to 'Profiles'...
-        move "C:\Automation\Ana_Profiles" "C:\Automation\Profiles" >nul
-    ) else (
-        REM Create fresh if nothing exists
-        mkdir "C:\Automation\Profiles"
-    )
-) else (
-    REM Destination already exists.
-    REM If legacy folders ALSO exist, we should probably warn or remove them?
-    REM For safety, we just leave them alone or hide them.
-    if exist "C:\Automation\My_Profiles" (
-        echo [INFO] Found unused 'My_Profiles'. 'Profiles' is already active.
-    )
-)
-
-REM --------------------------------------------------------------------------
-
-REM Try 'tar' by changing directory to C:\ (avoids flag parsing issues)
-pushd C:\
-tar -xf "%SCRIPT_DIR%Automation.zip"
-if %errorlevel% neq 0 (
-    echo [WARNING] 'tar' failed. Trying PowerShell fallback...
-    powershell -Command "Expand-Archive -Path '%SCRIPT_DIR%Automation.zip' -DestinationPath 'C:\' -Force"
-    if %errorlevel% neq 0 (
-        popd
-        echo [ERROR] Failed to extract Automation.zip!
-        pause
-        exit /b 1
-    )
-)
-popd
-echo   [OK] Automation folder installed to C:\Automation
-
-echo.
-echo [Step 2.5] Configuring Chrome Extensions and Policy Cleanup...
-REM IMPORTANT: We proactively clean Chrome policies to ensure:
-REM   1. Client browser profiles have correct extensions (side-loaded, not forced globally)
-REM   2. Personal Chrome profiles remain untouched and not "managed by organization"
-REM   3. Chrome Password Manager and other features work normally in all profiles
-
+echo [Step 2/4] Cleaning Chrome Policies (Protecting Personal Profiles)...
 reg delete "HKCU\Software\Policies\Google\Chrome\ExtensionInstallForcelist" /f >nul 2>&1
 reg delete "HKCU\Software\Policies\Google\Chrome" /v "ExtensionInstallBlacklist" /f >nul 2>&1
 reg delete "HKCU\Software\Policies\Google\Chrome" /v "ExtensionInstallWhitelist" /f >nul 2>&1
+echo   [OK] Policy Cleanup Complete (Password Manager & Extensions Restored)
 
-echo   [OK] Chrome Policy Cleanup Complete
-echo   [INFO] Personal Chrome profiles are protected
-echo   [INFO] Extensions will load only in client browser profiles
+REM 5. Install Assets & Shortcuts
 echo.
-echo   NOTE: If Chrome still shows 'managed by organization' after setup:
-echo         1. Close ALL Chrome windows (check Task Manager)
-echo         2. Restart Chrome
-echo         3. If issue persists, run CLEANUP_POLICIES.bat
+echo [Step 3/4] Installing Assets and Shortcuts...
+REM Ensure Automation folder exists
+if not exist "%AUTO_DIR%" mkdir "%AUTO_DIR%"
 
-echo.
-echo [Step 3/3] Installing Shortcuts to Desktop...
-REM Extract to 'Client Systems Shortcuts' folder on Desktop (Clean Install)
-powershell -Command "$d = [Environment]::GetFolderPath('Desktop'); $p = Join-Path $d 'Client Systems Shortcuts'; if (Test-Path $p) { Remove-Item $p -Recurse -Force }; New-Item -ItemType Directory -Path $p -Force | Out-Null; Expand-Archive -Path 'Shortcuts.zip' -DestinationPath $p -Force"
+REM Extract Automation.zip to C:\ (Contains Icons, Dashboards, Extensions)
+pushd C:\
+tar -xf "%SCRIPT_DIR%Automation.zip" >nul 2>&1
 if %errorlevel% neq 0 (
-    echo ERROR: Failed to install shortcuts!
-    pause
-    exit /b 1
+    powershell -Command "Expand-Archive -Path '%SCRIPT_DIR%Automation.zip' -DestinationPath 'C:\' -Force"
 )
-echo   [OK] Shortcuts installed to Desktop\Client Systems Shortcuts
+popd
 
-REM Refresh Icon Cache
-ie4uinit.exe -show >nul 2>&1
+REM Extract Shortcuts to Desktop
+powershell -Command "$p = '%SHORTCUT_PATH%'; if (Test-Path $p) { Remove-Item $p -Recurse -Force }; New-Item -ItemType Directory -Path $p -Force | Out-Null; Expand-Archive -Path '%SCRIPT_DIR%Shortcuts.zip' -DestinationPath $p -Force"
+echo   [OK] Assets installed to %AUTO_DIR%
+echo   [OK] Shortcuts installed to Desktop\%SHORTCUT_TARGET_NAME%
+
+REM 6. Optional Auto-Update Setup
+echo.
+echo [Step 4/4] Configuring Auto-Updates...
+
+REM Check if we are running from a sync folder (Google Drive, etc.)
+set IS_SYNC_FOLDER=0
+echo %SCRIPT_DIR% | findstr /i "Google" >nul && set IS_SYNC_FOLDER=1
+echo %SCRIPT_DIR% | findstr /i "OneDrive" >nul && set IS_SYNC_FOLDER=1
+echo %SCRIPT_DIR% | findstr /i "Shared drives" >nul && set IS_SYNC_FOLDER=1
+
+if "%1"=="/silent" (
+    set SETUP_AUTO=Y
+) else (
+    echo.
+    echo Would you like to enable automatic background updates?
+    echo (Shortcuts will update every 15 mins when the admin pushes changes)
+    set /p SETUP_AUTO="Enable Auto-Updates? (Y/N): "
+)
+
+if /i "%SETUP_AUTO%"=="Y" (
+    REM Use detected path or prompt if not found
+    set UPDATE_PATH=%SCRIPT_DIR%
+    if "%IS_SYNC_FOLDER%"=="0" (
+        if not "%1"=="/silent" (
+            echo.
+            echo [WARNING] Could not automatically detect Google Drive path.
+            echo Please paste the path to the 'For_Team_Complete' folder on your Drive:
+            set /p UPDATE_PATH="Path: "
+        )
+    )
+    
+    REM Remove trailing backslash if present
+    if "!UPDATE_PATH:~-1!"=="\" set UPDATE_PATH=!UPDATE_PATH:~0,-1!
+
+    REM Create the local AUTO_UPDATE.bat
+    (
+    echo @echo off
+    echo set UPDATE_SOURCE=!UPDATE_PATH!
+    echo set VERSION_FILE=%%UPDATE_SOURCE%%\version.txt
+    echo set LOCAL_VERSION_FILE=%AUTO_DIR%\.version
+    echo set LOG_FILE=%AUTO_DIR%\update.log
+    echo.
+    echo if not exist "%%UPDATE_SOURCE%%" exit /b 0
+    echo if not exist "%%VERSION_FILE%%" exit /b 0
+    echo if not exist "%%LOCAL_VERSION_FILE%%" echo 0 ^> "%%LOCAL_VERSION_FILE%%"
+    echo.
+    echo set /p SERVER_VERSION=^<"%%VERSION_FILE%%"
+    echo set /p LOCAL_VERSION=^<"%%LOCAL_VERSION_FILE%%"
+    echo.
+    echo if "%%SERVER_VERSION%%"=="%%LOCAL_VERSION%%" exit /b 0
+    echo.
+    echo set TEMP_DIR=%%TEMP%%\WeScope_Update_%%RANDOM%%
+    echo mkdir "%%TEMP_DIR%%" 2^>nul
+    echo copy "%%UPDATE_SOURCE%%\Automation.zip" "%%TEMP_DIR%%\" ^>nul 2^>^&1
+    echo copy "%%UPDATE_SOURCE%%\Shortcuts.zip" "%%TEMP_DIR%%\" ^>nul 2^>^&1
+    echo copy "%%UPDATE_SOURCE%%\SETUP_TEAM.bat" "%%TEMP_DIR%%\" ^>nul 2^>^&1
+    echo if not exist "%%TEMP_DIR%%\Automation.zip" exit /b 1
+    echo cd /d "%%TEMP_DIR%%"
+    echo call SETUP_TEAM.bat /silent ^>nul 2^>^&1
+    echo if %%errorlevel%% equ 0 echo %%SERVER_VERSION%% ^> "%%LOCAL_VERSION_FILE%%"
+    echo cd /d "%%USERPROFILE%%"
+    echo rmdir /s /q "%%TEMP_DIR%%" 2^>nul
+    ) > "%AUTO_DIR%\AUTO_UPDATE.bat"
+
+    REM Create Scheduled Task
+    schtasks /create /tn "WeScope Browser Auto-Update" /tr "\"%AUTO_DIR%\AUTO_UPDATE.bat\"" /sc minute /mo 15 /rl highest /f >nul 2>&1
+    
+    if !errorlevel! equ 0 (
+        echo   [OK] Auto-update scheduled (every 15 mins)
+        REM Initialize version file
+        if exist "version.txt" copy /y "version.txt" "%AUTO_DIR%\.version" >nul
+    ) else (
+        echo   [ERROR] Failed to create scheduled task.
+    )
+) else (
+    echo   [SKIP] Auto-update setup skipped.
+)
 
 echo.
 echo ================================================================================
-echo SUCCESS! Setup Complete!
-echo You can now use the shortcuts in the "Client Systems Shortcuts" folder.
+echo SUCCESS! Setup Complete.
 echo ================================================================================
-echo.
-
-REM Skip pause if running in silent mode
-if "%1"=="/silent" exit /b 0
-
-pause
+if not "%1"=="/silent" pause
+exit /b 0
