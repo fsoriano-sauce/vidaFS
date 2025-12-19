@@ -32,13 +32,13 @@ This setup allows shortcuts to update automatically in the background—no manua
    ```
    Example: G:\My Drive\WeScope Browser Updates\For_Team_Complete
    ```
-3. ✅ Done! Updates will now check every 4 hours automatically
+3. ✅ Done! Updates will now check every 15 minutes automatically
 
 ---
 
 ## 🔄 How Auto-Updates Work
 
-- **Automatic**: Checks for updates every 4 hours in the background
+- **Automatic**: Checks for updates every 15 minutes in the background
 - **Silent**: No popups or interruptions
 - **Smart**: Only updates if a new version is available
 - **Safe**: Existing profiles and data are preserved
@@ -109,7 +109,7 @@ Yes! Simply delete shortcuts from the `Client Systems Shortcuts` folder. They'll
 Yes! Edit the scheduled task:
 1. Open Task Scheduler
 2. Find "WeScope Browser Auto-Update"
-3. Change the interval (default: every 4 hours)
+3. Change the interval (default: every 15 minutes)
 
 ### What if I don't want auto-updates?
 
