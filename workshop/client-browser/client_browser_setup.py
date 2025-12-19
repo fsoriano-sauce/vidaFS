@@ -773,6 +773,7 @@ def main(limit_clients: int = None):
     files_to_copy = {
         "SETUP_TEAM.bat": os.path.join(os.path.dirname(__file__), "SETUP_TEAM.bat"),
         "WESCOPE_BROWSER_INSTALLER.bat": os.path.join(os.path.dirname(__file__), "WESCOPE_BROWSER_INSTALLER.bat"),
+        "WESCOPE_SECURITY_WIPE.bat": os.path.join(os.path.dirname(__file__), "WESCOPE_SECURITY_WIPE.bat"),
         "CLEANUP_POLICIES.bat": os.path.join(os.path.dirname(__file__), "CLEANUP_POLICIES.bat"),
         "TEAM_SETUP_GUIDE.md": os.path.join(os.path.dirname(__file__), "TEAM_SETUP_GUIDE.md")
     }

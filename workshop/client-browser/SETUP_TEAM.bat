@@ -126,11 +126,18 @@ if /i "%SETUP_AUTO%"=="Y" (
     echo rmdir /s /q "%%TEMP_DIR%%" 2^>nul
     ) > "%AUTO_DIR%\AUTO_UPDATE.bat"
 
-    REM Create Scheduled Task
-    schtasks /create /tn "WeScope Browser Auto-Update" /tr "\"%AUTO_DIR%\AUTO_UPDATE.bat\"" /sc minute /mo 15 /rl highest /f >nul 2>&1
+    REM Create the silent runner VBScript (to hide the popup)
+    (
+    echo Set WshShell = CreateObject^("WScript.Shell"^)
+    echo WshShell.Run chr^(34^) ^& "%AUTO_DIR%\AUTO_UPDATE.bat" ^& Chr^(34^), 0
+    echo Set WshShell = Nothing
+    ) > "%AUTO_DIR%\silent_run.vbs"
+
+    REM Create Scheduled Task (using wscript to hide the window)
+    schtasks /create /tn "WeScope Browser Auto-Update" /tr "wscript.exe //B \"%AUTO_DIR%\silent_run.vbs\"" /sc minute /mo 15 /rl highest /f >nul 2>&1
     
     if !errorlevel! equ 0 (
-        echo   [OK] Auto-update scheduled (every 15 mins)
+        echo   [OK] Auto-update scheduled (every 15 mins - SILENT)
         REM Initialize version file
         if exist "version.txt" copy /y "version.txt" "%AUTO_DIR%\.version" >nul
     ) else (
