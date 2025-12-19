@@ -123,4 +123,8 @@ echo SUCCESS! Setup Complete!
 echo You can now use the shortcuts in the "Client Systems Shortcuts" folder.
 echo ================================================================================
 echo.
+
+REM Skip pause if running in silent mode
+if "%1"=="/silent" exit /b 0
+
 pause

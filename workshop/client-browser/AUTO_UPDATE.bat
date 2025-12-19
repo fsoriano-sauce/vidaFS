@@ -62,7 +62,7 @@ if not exist "%TEMP_DIR%\Automation.zip" (
 
 REM Run silent update
 cd /d "%TEMP_DIR%"
-call SETUP_TEAM.bat >nul 2>&1
+call SETUP_TEAM.bat /silent >nul 2>&1
 
 if %errorlevel% equ 0 (
     echo [%date% %time%] Update successful! Now running v%SERVER_VERSION% >> "%LOG_FILE%"

@@ -8,7 +8,7 @@ echo WeScope Auto-Update Setup
 echo ================================================================================
 echo.
 echo This script will configure automatic background updates for your browser
-echo shortcuts. Updates will check every 4 hours and install silently.
+echo shortcuts. Updates will check every 15 minutes and install silently.
 echo.
 
 REM Check if running as administrator
@@ -73,10 +73,10 @@ echo   [OK] Auto-updater created
 
 REM Create scheduled task
 echo Creating scheduled task...
-schtasks /create /tn "WeScope Browser Auto-Update" /tr "\"%AUTO_UPDATE_SCRIPT%\"" /sc hourly /mo 4 /rl highest /f
+schtasks /create /tn "WeScope Browser Auto-Update" /tr "\"%AUTO_UPDATE_SCRIPT%\"" /sc minute /mo 15 /rl highest /f
 
 if %errorlevel% equ 0 (
-    echo   [OK] Scheduled task created (runs every 4 hours^)
+    echo   [OK] Scheduled task created (runs every 15 minutes^)
 ) else (
     echo.
     echo   [ERROR] Failed to create scheduled task. Error code: %errorlevel%
