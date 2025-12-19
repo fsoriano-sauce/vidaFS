@@ -33,9 +33,26 @@ echo [INFO] Launching installer...
 echo.
 
 REM 3. Call the master setup script from Google Drive
-REM We use 'call' so it stays in this window and 'pushd' to ensure it runs in its own directory
+echo [INFO] Moving to G: drive...
 pushd "G:\Shared drives\Client Shortcuts\For_Team_Complete"
-call SETUP_TEAM.bat
-popd
+if %errorlevel% neq 0 (
+    echo [ERROR] Could not enter Google Drive directory.
+    pause
+    exit /b 1
+)
 
+echo [INFO] Running Master Setup Script...
+call SETUP_TEAM.bat
+if %errorlevel% neq 0 (
+    echo.
+    echo [ERROR] Master Setup failed with code %errorlevel%
+    popd
+    pause
+    exit /b 1
+)
+
+echo.
+echo [INFO] Installer finished successfully.
+popd
+timeout /t 3
 exit /b 0
