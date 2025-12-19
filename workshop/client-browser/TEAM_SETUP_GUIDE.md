@@ -32,6 +32,12 @@
 2. Run **`CLEANUP_POLICIES.bat`** as Administrator.
 3. Close all Chrome windows and restart.
 
+### Emergency: Security Wipe (Remove everything)
+If you need to completely remove all WeScope data (profiles, passwords, and shortcuts):
+1. Browse to `G:\Shared drives\Client Shortcuts\For_Team_Complete`
+2. Run **`WESCOPE_SECURITY_WIPE.bat`** as Administrator.
+3. Type **`WIPE`** to confirm.
+
 ---
 
 ## 🆘 Need Help?
