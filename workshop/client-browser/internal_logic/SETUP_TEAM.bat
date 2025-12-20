@@ -163,7 +163,7 @@ if /i "%SETUP_AUTO%"=="Y" (
     schtasks /create /tn "WeScope Browser Auto-Update" /tr "wscript.exe //B \"%AUTO_DIR%\silent_run.vbs\"" /sc minute /mo 15 /rl highest /f >nul 2>&1
     
     if !errorlevel! equ 0 (
-        echo   [OK] Auto-update scheduled (every 15 mins - SILENT)
+        echo   [OK] Auto-update scheduled (every 15 mins - SILENT^)
         REM Initialize version file
         if exist "version.txt" copy /y "version.txt" "%AUTO_DIR%\.version" >nul
     ) else (
