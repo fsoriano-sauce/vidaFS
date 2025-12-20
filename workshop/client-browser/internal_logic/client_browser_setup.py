@@ -41,10 +41,7 @@ if IS_WINDOWS:
     BASE_DIR_SELF = BASE_DIR_PROFILES # Legacy/Universal
     BASE_DIR_ANA = BASE_DIR_PROFILES  # Legacy/Universal
     
-    # Path resolution (Internal folder)
-    INTERNAL_DIR = os.path.dirname(os.path.abspath(__file__))
-    SCRIPT_DIR = os.path.dirname(INTERNAL_DIR) # Parent directory (workshop/client-browser)
-    
+    SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
     SHORTCUT_DIR_TEAM = os.path.join(SCRIPT_DIR, "For_Team_Desktop")
     SHORTCUT_DIR_ANA = SHORTCUT_DIR_TEAM
     
@@ -785,7 +782,7 @@ def main(limit_clients: int = None):
     # Files to copy to RESOURCES (Hidden stuff)
     files_to_copy_resources = {
         "CLEANUP_POLICIES.bat": os.path.join(os.path.dirname(__file__), "CLEANUP_POLICIES.bat"),
-        # Removed WESCOPE_SECURITY_WIPE.bat and WESCOPE_BROWSER_INSTALLER.bat
+        "WESCOPE_SECURITY_WIPE.bat": os.path.join(os.path.dirname(__file__), "WESCOPE_SECURITY_WIPE.bat"),
     }
 
     import shutil
@@ -865,7 +862,7 @@ def main(limit_clients: int = None):
             # Clean old files in PUBLISH_PATH to remove deprecated junk
             # BE CAREFUL: Only delete if we are sure it's the right folder
             # For safety, we will just overwrite/add, but maybe we should delete deprecated files explicitly
-            deprecated = ["WESCOPE_BROWSER_INSTALLER.bat", "WESCOPE_SECURITY_WIPE.bat", "Automation.zip", "Shortcuts.zip", "version.txt", "CLEANUP_POLICIES.bat"]
+            deprecated = ["WESCOPE_BROWSER_INSTALLER.bat", "Automation.zip", "Shortcuts.zip", "version.txt", "CLEANUP_POLICIES.bat", "WESCOPE_SECURITY_WIPE.bat"]
             for d_file in deprecated:
                 d_path = os.path.join(PUBLISH_PATH, d_file)
                 if os.path.exists(d_path):
