@@ -88,9 +88,14 @@ echo %SCRIPT_DIR% | findstr /i "Google" >nul && set IS_SYNC_FOLDER=1
 echo %SCRIPT_DIR% | findstr /i "OneDrive" >nul && set IS_SYNC_FOLDER=1
 echo %SCRIPT_DIR% | findstr /i "Shared drives" >nul && set IS_SYNC_FOLDER=1
 
-if "%1"=="/silent" (
+REM Parse Arguments (Launcher passes path as %1, Auto-Updater passes /silent then path)
+set "UPDATE_SOURCE_OVERRIDE="
+if /i "%~1"=="/silent" (
     set SETUP_AUTO=Y
+    if not "%~2"=="" set "UPDATE_SOURCE_OVERRIDE=%~2"
 ) else (
+    if not "%~1"=="" set "UPDATE_SOURCE_OVERRIDE=%~1"
+    
     echo.
     echo Would you like to enable automatic background updates?
     echo (Shortcuts will update every 15 mins when the admin pushes changes)
@@ -100,12 +105,21 @@ if "%1"=="/silent" (
 if /i "%SETUP_AUTO%"=="Y" (
     REM Use detected path or prompt if not found
     set UPDATE_PATH=%SCRIPT_DIR%
-    if "%IS_SYNC_FOLDER%"=="0" (
-        if not "%1"=="/silent" (
-            echo.
-            echo [WARNING] Could not automatically detect Google Drive path.
-            echo Please paste the path to the 'For_Team_Complete' folder on your Drive:
-            set /p UPDATE_PATH="Path: "
+    
+    REM Apply Override if provided (e.g. from Launcher)
+    if defined UPDATE_SOURCE_OVERRIDE (
+        set "UPDATE_PATH=!UPDATE_SOURCE_OVERRIDE!"
+        echo   [INFO] Using override source: !UPDATE_PATH!
+    )
+
+    if not defined UPDATE_SOURCE_OVERRIDE (
+        if "%IS_SYNC_FOLDER%"=="0" (
+            if not "%~1"=="/silent" (
+                echo.
+                echo [WARNING] Could not automatically detect Google Drive path.
+                echo Please paste the path to the 'For_Team_Complete' folder on your Drive:
+                set /p UPDATE_PATH="Path: "
+            )
         )
     )
     
@@ -150,7 +164,7 @@ if /i "%SETUP_AUTO%"=="Y" (
     echo WshShell.Run chr^(34^) ^& "%AUTO_DIR%\AUTO_UPDATE.bat" ^& Chr^(34^), 0
     echo Set WshShell = Nothing
     ) > "%AUTO_DIR%\silent_run.vbs"
-
+    
     REM Create Scheduled Task (using wscript to hide the window)
     schtasks /create /tn "WeScope Browser Auto-Update" /tr "wscript.exe //B \"%AUTO_DIR%\silent_run.vbs\"" /sc minute /mo 15 /rl highest /f >nul 2>&1
     
@@ -169,5 +183,5 @@ echo.
 echo ================================================================================
 echo SUCCESS! Setup Complete.
 echo ================================================================================
-if not "%1"=="/silent" pause
+if not "%~1"=="/silent" pause
 exit /b 0
