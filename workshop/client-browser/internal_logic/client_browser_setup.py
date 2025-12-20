@@ -768,6 +768,24 @@ def main(limit_clients: int = None):
     dist_dir = os.path.join(SCRIPT_DIR, "For_Team_Complete")
     resources_dir = os.path.join(dist_dir, "resources")
     
+    # Clean output directories to ensure no deprecated files persist
+    if os.path.exists(dist_dir):
+        try:
+            # We don't want to delete the directory itself if it's open, but we should clean files
+            # Actually, simpler to just delete deprecated files explicitly from LOCAL dist_dir
+            deprecated_local = ["WESCOPE_BROWSER_INSTALLER.bat", "WESCOPE_SECURITY_WIPE.bat"]
+            for d in deprecated_local:
+                dp = os.path.join(dist_dir, d)
+                if os.path.exists(dp): os.remove(dp)
+            
+            # Clean resources
+            if os.path.exists(resources_dir):
+                 deprecated_res_local = ["WESCOPE_SECURITY_WIPE.bat"]
+                 for d in deprecated_res_local:
+                    dp = os.path.join(resources_dir, d)
+                    if os.path.exists(dp): os.remove(dp)
+        except: pass
+
     if not os.path.exists(dist_dir):
         os.makedirs(dist_dir)
     if not os.path.exists(resources_dir):
@@ -782,7 +800,7 @@ def main(limit_clients: int = None):
     # Files to copy to RESOURCES (Hidden stuff)
     files_to_copy_resources = {
         "CLEANUP_POLICIES.bat": os.path.join(os.path.dirname(__file__), "CLEANUP_POLICIES.bat"),
-        "WESCOPE_SECURITY_WIPE.bat": os.path.join(os.path.dirname(__file__), "WESCOPE_SECURITY_WIPE.bat"),
+        # REMOVED: WESCOPE_SECURITY_WIPE.bat (Admin only, not for distribution)
     }
 
     import shutil
@@ -871,6 +889,17 @@ def main(limit_clients: int = None):
                         print(f"  [Clean] Removed old file: {d_file}")
                     except: pass
             
+            # Also clean deprecated files from RESOURCES if they shouldn't be there
+            deprecated_res = ["WESCOPE_SECURITY_WIPE.bat"]
+            pub_res = os.path.join(PUBLISH_PATH, "resources")
+            for d_file in deprecated_res:
+                d_path = os.path.join(pub_res, d_file)
+                if os.path.exists(d_path):
+                    try:
+                        os.remove(d_path)
+                        print(f"  [Clean] Removed old resource: {d_file}")
+                    except: pass
+
             # Copy ROOT files
             for item in os.listdir(dist_dir):
                 s = os.path.join(dist_dir, item)
@@ -903,6 +932,14 @@ def main(limit_clients: int = None):
     print(f"  --> {dist_dir}")
     print(f"\nContains: Automation.zip + Shortcuts.zip + SETUP_TEAM.bat + version.txt (v{version_timestamp})")
     print("="*80 + "\n")
+
+    # 6. Cleanup Staging Folder
+    if os.path.exists(SHORTCUT_DIR_TEAM):
+        try:
+            shutil.rmtree(SHORTCUT_DIR_TEAM)
+            print(f"[Clean] Removed staging folder: {os.path.basename(SHORTCUT_DIR_TEAM)}")
+        except Exception as e:
+            print(f"[Warning] Could not clean up staging folder: {e}")
 
 if __name__ == "__main__":
     import sys
