@@ -768,12 +768,12 @@ def main(limit_clients: int = None):
     dist_dir = os.path.join(SCRIPT_DIR, "For_Team_Complete")
     resources_dir = os.path.join(dist_dir, "resources")
     
-    # Clean output directories to ensure no deprecated files persist
+            # Clean output directories to ensure no deprecated files persist
     if os.path.exists(dist_dir):
         try:
             # We don't want to delete the directory itself if it's open, but we should clean files
             # Actually, simpler to just delete deprecated files explicitly from LOCAL dist_dir
-            deprecated_local = ["WESCOPE_BROWSER_INSTALLER.bat", "WESCOPE_SECURITY_WIPE.bat"]
+            deprecated_local = ["WESCOPE_SECURITY_WIPE.bat"]
             for d in deprecated_local:
                 dp = os.path.join(dist_dir, d)
                 if os.path.exists(dp): os.remove(dp)
@@ -794,6 +794,7 @@ def main(limit_clients: int = None):
     # Files to copy to ROOT
     files_to_copy_root = {
         "SETUP_TEAM.bat": os.path.join(os.path.dirname(__file__), "SETUP_TEAM.bat"),
+        "WESCOPE_BROWSER_INSTALLER.bat": os.path.join(os.path.dirname(__file__), "WESCOPE_BROWSER_INSTALLER.bat"),
         "TEAM_SETUP_GUIDE.md": os.path.join(os.path.dirname(__file__), "TEAM_SETUP_GUIDE.md")
     }
 
@@ -880,7 +881,7 @@ def main(limit_clients: int = None):
             # Clean old files in PUBLISH_PATH to remove deprecated junk
             # BE CAREFUL: Only delete if we are sure it's the right folder
             # For safety, we will just overwrite/add, but maybe we should delete deprecated files explicitly
-            deprecated = ["WESCOPE_BROWSER_INSTALLER.bat", "Automation.zip", "Shortcuts.zip", "version.txt", "CLEANUP_POLICIES.bat", "WESCOPE_SECURITY_WIPE.bat"]
+            deprecated = ["Automation.zip", "Shortcuts.zip", "version.txt", "CLEANUP_POLICIES.bat", "WESCOPE_SECURITY_WIPE.bat"]
             for d_file in deprecated:
                 d_path = os.path.join(PUBLISH_PATH, d_file)
                 if os.path.exists(d_path):
