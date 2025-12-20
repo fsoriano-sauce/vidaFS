@@ -1,40 +1,42 @@
 @echo off
 REM =============================================================================
-REM WeScope Browser - Unified Installer Launcher (DEBUG MODE)
+REM WeScope Browser - Unified Installer Launcher (v3.8 Stable)
 REM =============================================================================
 setlocal enabledelayedexpansion
-
-echo [DEBUG] Launcher Started.
-echo [DEBUG] User: %USERNAME%
-echo [DEBUG] Working Dir: %CD%
 
 REM 1. Define Master Path (G: Drive)
 set "MASTER_DIR=G:\Shared drives\Client Shortcuts\For_Team_Complete"
 set "MASTER_SETUP=%MASTER_DIR%\SETUP_TEAM.bat"
 
-echo [DEBUG] Looking for: "%MASTER_SETUP%"
+echo.
+echo  --------------------------------------------------
+echo    WESCOPE CLIENT SYSTEMS - INSTALLER LOADER
+echo  --------------------------------------------------
+echo.
+echo  [1/3] Checking connection to WeScope Drive...
 
 REM 2. Check for G: Drive Visibility
 if not exist "%MASTER_SETUP%" (
-    echo [ERROR] Cannot find SETUP_TEAM.bat on G: drive.
-    REM Check if we are already Admin
+    echo.
+    echo  [ERROR] Cannot access G: Drive.
+    echo  Please ensure Google Drive for Desktop is running.
+    echo.
+    REM Check if running as Admin (which hides G: drive)
     net session >nul 2>&1
     if !errorlevel! equ 0 (
-        echo [ERROR] You are running as Administrator! Admin cannot see G: drive.
-        echo FIX: Run as NORMAL user (Double-click only).
-    ) else (
-        echo [ERROR] G: drive not found. Is Google Drive running?
+        echo  [TIP] You are running as Administrator.
+        echo        Please CLOSE this window and simply DOUBLE-CLICK the file.
+        echo        (Do NOT Right-Click - Run as Admin).
     )
     pause
     exit /b 1
 )
 
-REM 3. We can see G:. Prepare Temp Directory.
+REM 3. Prepare Temp Directory
 set "TEMP_DIR=%TEMP%\WeScopeSetup_%RANDOM%"
-echo [DEBUG] Creating temp dir: "%TEMP_DIR%"
 mkdir "%TEMP_DIR%" >nul 2>&1
 
-echo [DEBUG] Copying files...
+echo  [2/3] Downloading installer files...
 copy "%MASTER_DIR%\SETUP_TEAM.bat" "%TEMP_DIR%\" >nul
 copy "%MASTER_DIR%\Automation.zip" "%TEMP_DIR%\" >nul
 copy "%MASTER_DIR%\Shortcuts.zip" "%TEMP_DIR%\" >nul
@@ -42,24 +44,24 @@ copy "%MASTER_DIR%\version.txt" "%TEMP_DIR%\" >nul
 copy "%MASTER_DIR%\CLEANUP_POLICIES.bat" "%TEMP_DIR%\" >nul
 
 if not exist "%TEMP_DIR%\SETUP_TEAM.bat" (
-    echo [ERROR] Copy failed.
+    echo.
+    echo  [ERROR] Failed to download files.
+    echo  Please check your internet connection.
     pause
     exit /b 1
 )
 
-echo [DEBUG] Copy complete.
+echo  [3/3] Starting Installer...
 echo.
-echo [INFO] Attempting to launch Admin Prompt...
-echo [INFO] Watch for a flashing window or UAC prompt.
+echo  [ACTION REQUIRED]
+echo  A new window will appear requesting Administrator permissions.
+echo  Please click [YES] to continue.
 echo.
 
 REM 4. Launch SETUP_TEAM.bat as Administrator from Temp
-REM CHANGED: cmd /k to keep window open
-REM CHANGED: Added quotes around cd path
-powershell -Command "Start-Process cmd -ArgumentList '/k cd /d \"%TEMP_DIR%\" && echo [DEBUG] Elevated. && SETUP_TEAM.bat /interactive \"%MASTER_DIR%\"' -Verb RunAs"
+REM We use /k to KEEP the window open if it crashes, so you can see the error.
+powershell -Command "Start-Process cmd -ArgumentList '/k cd /d %TEMP_DIR% && SETUP_TEAM.bat /interactive \"%MASTER_DIR%\"' -Verb RunAs"
 
-echo [DEBUG] Launch command sent.
-echo.
-echo If no new window appears, the PowerShell command failed.
+echo  Done. You can close this window.
 pause
 exit /b 0
