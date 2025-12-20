@@ -4,6 +4,21 @@ REM WeScope Team - Unified Client Browser Setup & Auto-Updater
 REM =============================================================================
 setlocal enabledelayedexpansion
 
+REM Parse Arguments
+set SILENT_MODE=0
+set "UPDATE_SOURCE_OVERRIDE="
+
+:parse_args
+if "%~1"=="" goto :args_done
+if /i "%~1"=="/silent" (
+    set SILENT_MODE=1
+) else (
+    set "UPDATE_SOURCE_OVERRIDE=%~1"
+)
+shift
+goto :parse_args
+:args_done
+
 echo.
 echo ================================================================================
 echo WeScope Team Browser Setup (Unified Installer)
@@ -39,20 +54,19 @@ if not exist "Shortcuts.zip" ( echo [ERROR] Shortcuts.zip missing in %CD%! & pau
 echo   [OK] Found Automation.zip and Shortcuts.zip
 
 REM 4. Chrome Policy Cleanup (Proactive Fix)
-echo.
-echo [Step 2/4] Cleaning Chrome Policies (Protecting Personal Profiles)...
+echo [Step 2/4] Cleaning Chrome Policies...
 reg delete "HKCU\Software\Policies\Google\Chrome\ExtensionInstallForcelist" /f >nul 2>&1
 reg delete "HKCU\Software\Policies\Google\Chrome" /v "ExtensionInstallBlacklist" /f >nul 2>&1
 reg delete "HKCU\Software\Policies\Google\Chrome" /v "ExtensionInstallWhitelist" /f >nul 2>&1
-echo   [OK] Policy Cleanup Complete (Password Manager & Extensions Restored)
+echo   [OK] Policy Cleanup Complete.
 
 REM 5. Install Assets & Shortcuts
-echo.
 echo [Step 3/4] Installing Assets and Shortcuts...
 REM Ensure Automation folder exists
 if not exist "%AUTO_DIR%" mkdir "%AUTO_DIR%"
 
 REM Extract Automation.zip to C:\ (Contains Icons, Dashboards, Extensions)
+echo   [Step 3/4] Unpacking assets...
 pushd C:\
 tar -xf "%SCRIPT_DIR%Automation.zip" >nul 2>&1
 if %errorlevel% neq 0 (
@@ -61,12 +75,12 @@ if %errorlevel% neq 0 (
 popd
 
 REM Extract Shortcuts to Desktop
+echo   [Step 3/4] Unpacking shortcuts...
 powershell -Command "$p = '%SHORTCUT_PATH%'; if (Test-Path $p) { Remove-Item $p -Recurse -Force }; New-Item -ItemType Directory -Path $p -Force | Out-Null; Expand-Archive -Path '%SCRIPT_DIR%Shortcuts.zip' -DestinationPath $p -Force"
 echo   [OK] Assets installed to %AUTO_DIR%
 echo   [OK] Shortcuts installed to Desktop\%SHORTCUT_TARGET_NAME%
 
 REM 6. Optional Auto-Update Setup
-echo.
 echo [Step 4/4] Configuring Auto-Updates...
 
 REM Check if we are running from a sync folder (Google Drive, etc.)
@@ -75,7 +89,7 @@ echo %SCRIPT_DIR% | findstr /i "Google" >nul && set IS_SYNC_FOLDER=1
 echo %SCRIPT_DIR% | findstr /i "OneDrive" >nul && set IS_SYNC_FOLDER=1
 echo %SCRIPT_DIR% | findstr /i "Shared drives" >nul && set IS_SYNC_FOLDER=1
 
-if "%1"=="/silent" (
+if "%SILENT_MODE%"=="1" (
     set SETUP_AUTO=Y
 ) else (
     echo.
@@ -87,12 +101,21 @@ if "%1"=="/silent" (
 if /i "%SETUP_AUTO%"=="Y" (
     REM Use detected path or prompt if not found
     set UPDATE_PATH=%SCRIPT_DIR%
-    if "%IS_SYNC_FOLDER%"=="0" (
-        if not "%1"=="/silent" (
-            echo.
-            echo [WARNING] Could not automatically detect Google Drive path.
-            echo Please paste the path to the 'For_Team_Complete' folder on your Drive:
-            set /p UPDATE_PATH="Path: "
+    
+    REM Apply Override if provided (e.g. from Launcher)
+    if defined UPDATE_SOURCE_OVERRIDE (
+        set "UPDATE_PATH=!UPDATE_SOURCE_OVERRIDE!"
+        echo   [INFO] Using override source: !UPDATE_PATH!
+    )
+
+    if not defined UPDATE_SOURCE_OVERRIDE (
+        if "%IS_SYNC_FOLDER%"=="0" (
+            if "%SILENT_MODE%"=="0" (
+                echo.
+                echo [WARNING] Could not automatically detect Google Drive path.
+                echo Please paste the path to the 'For_Team_Complete' folder on your Drive:
+                set /p UPDATE_PATH="Path: "
+            )
         )
     )
     
@@ -123,7 +146,7 @@ if /i "%SETUP_AUTO%"=="Y" (
     echo copy "%%UPDATE_SOURCE%%\SETUP_TEAM.bat" "%%TEMP_DIR%%\" ^>nul 2^>^&1
     echo if not exist "%%TEMP_DIR%%\Automation.zip" exit /b 1
     echo cd /d "%%TEMP_DIR%%"
-    echo call SETUP_TEAM.bat /silent ^>nul 2^>^&1
+    echo call SETUP_TEAM.bat /silent "!UPDATE_PATH!" ^>nul 2^>^&1
     echo if %%errorlevel%% equ 0 echo %%SERVER_VERSION%% ^> "%%LOCAL_VERSION_FILE%%"
     echo cd /d "%%USERPROFILE%%"
     echo rmdir /s /q "%%TEMP_DIR%%" 2^>nul
@@ -154,5 +177,5 @@ echo.
 echo ================================================================================
 echo SUCCESS! Setup Complete.
 echo ================================================================================
-if not "%1"=="/silent" pause
+if "%SILENT_MODE%"=="0" pause
 exit /b 0
