@@ -4,7 +4,7 @@
 
 1.  **Download** the **`WESCOPE_BROWSER_INSTALLER.bat`** file sent by Frank.
 2.  Save it anywhere (Downloads or Desktop).
-3.  Right-click the file and select **Run as Administrator**.
+3.  **Right-click** the file and select **Run as Administrator**.
 4.  **When prompted**, type **`Y`** to enable automatic background updates.
 5.  **Done!** Your shortcuts are installed in `Desktop\Client Systems Shortcuts` and will now update themselves automatically every 15 minutes.
 
