@@ -42,7 +42,13 @@ set SCRIPT_DIR=%~dp0
 set AUTO_DIR=C:\Automation
 set PROFILE_DIR=%AUTO_DIR%\Profiles
 set SHORTCUT_TARGET_NAME=Client Systems Shortcuts
-set SHORTCUT_PATH=%USERPROFILE%\Desktop\%SHORTCUT_TARGET_NAME%
+
+REM Detect OneDrive Desktop (Fix for missing icons)
+if exist "%USERPROFILE%\OneDrive\Desktop" (
+    set "SHORTCUT_PATH=%USERPROFILE%\OneDrive\Desktop\%SHORTCUT_TARGET_NAME%"
+) else (
+    set "SHORTCUT_PATH=%USERPROFILE%\Desktop\%SHORTCUT_TARGET_NAME%"
+)
 
 cd /d "%SCRIPT_DIR%"
 
