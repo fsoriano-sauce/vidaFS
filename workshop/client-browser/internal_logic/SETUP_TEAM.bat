@@ -55,9 +55,17 @@ cd /d "%SCRIPT_DIR%"
 REM 3. File Verification
 echo [Step 1/4] Verifying installation files...
 echo   Working Dir: %CD%
-if not exist "Automation.zip" ( echo [ERROR] Automation.zip missing in %CD%! & pause & exit /b 1 )
-if not exist "Shortcuts.zip" ( echo [ERROR] Shortcuts.zip missing in %CD%! & pause & exit /b 1 )
-echo   [OK] Found Automation.zip and Shortcuts.zip
+
+REM Check for resources folder
+set "RES_DIR=%SCRIPT_DIR%resources"
+if not exist "%RES_DIR%" (
+    REM Fallback for legacy flat structure (just in case)
+    if exist "Automation.zip" set "RES_DIR=%SCRIPT_DIR%"
+)
+
+if not exist "%RES_DIR%\Automation.zip" ( echo [ERROR] Automation.zip missing in %RES_DIR%! & pause & exit /b 1 )
+if not exist "%RES_DIR%\Shortcuts.zip" ( echo [ERROR] Shortcuts.zip missing in %RES_DIR%! & pause & exit /b 1 )
+echo   [OK] Found assets in %RES_DIR%
 
 REM 4. Chrome Policy Cleanup (Proactive Fix)
 echo [Step 2/4] Cleaning Chrome Policies...
@@ -74,15 +82,15 @@ if not exist "%AUTO_DIR%" mkdir "%AUTO_DIR%"
 REM Extract Automation.zip to C:\ (Contains Icons, Dashboards, Extensions)
 echo   [Step 3/4] Unpacking assets...
 pushd C:\
-tar -xf "%SCRIPT_DIR%Automation.zip" >nul 2>&1
+tar -xf "%RES_DIR%\Automation.zip" >nul 2>&1
 if %errorlevel% neq 0 (
-    powershell -Command "Expand-Archive -Path '%SCRIPT_DIR%Automation.zip' -DestinationPath 'C:\' -Force"
+    powershell -Command "Expand-Archive -Path '%RES_DIR%\Automation.zip' -DestinationPath 'C:\' -Force"
 )
 popd
 
 REM Extract Shortcuts to Desktop
 echo   [Step 3/4] Unpacking shortcuts...
-powershell -Command "$p = '%SHORTCUT_PATH%'; if (Test-Path $p) { Remove-Item $p -Recurse -Force }; New-Item -ItemType Directory -Path $p -Force | Out-Null; Expand-Archive -Path '%SCRIPT_DIR%Shortcuts.zip' -DestinationPath $p -Force"
+powershell -Command "$p = '%SHORTCUT_PATH%'; if (Test-Path $p) { Remove-Item $p -Recurse -Force }; New-Item -ItemType Directory -Path $p -Force | Out-Null; Expand-Archive -Path '%RES_DIR%\Shortcuts.zip' -DestinationPath $p -Force"
 echo   [OK] Assets installed to %AUTO_DIR%
 echo   [OK] Shortcuts installed to Desktop\%SHORTCUT_TARGET_NAME%
 
@@ -132,7 +140,8 @@ if /i "%SETUP_AUTO%"=="Y" (
     (
     echo @echo off
     echo set UPDATE_SOURCE=!UPDATE_PATH!
-    echo set VERSION_FILE=%%UPDATE_SOURCE%%\version.txt
+    echo set RES_DIR=%%UPDATE_SOURCE%%\resources
+    echo set VERSION_FILE=%%RES_DIR%%\version.txt
     echo set LOCAL_VERSION_FILE=%AUTO_DIR%\.version
     echo set LOG_FILE=%AUTO_DIR%\update.log
     echo.
@@ -147,10 +156,11 @@ if /i "%SETUP_AUTO%"=="Y" (
     echo.
     echo set TEMP_DIR=%%TEMP%%\WeScope_Update_%%RANDOM%%
     echo mkdir "%%TEMP_DIR%%" 2^>nul
-    echo copy "%%UPDATE_SOURCE%%\Automation.zip" "%%TEMP_DIR%%\" ^>nul 2^>^&1
-    echo copy "%%UPDATE_SOURCE%%\Shortcuts.zip" "%%TEMP_DIR%%\" ^>nul 2^>^&1
+    echo mkdir "%%TEMP_DIR%%\resources" 2^>nul
+    echo copy "%%RES_DIR%%\Automation.zip" "%%TEMP_DIR%%\resources\" ^>nul 2^>^&1
+    echo copy "%%RES_DIR%%\Shortcuts.zip" "%%TEMP_DIR%%\resources\" ^>nul 2^>^&1
     echo copy "%%UPDATE_SOURCE%%\SETUP_TEAM.bat" "%%TEMP_DIR%%\" ^>nul 2^>^&1
-    echo if not exist "%%TEMP_DIR%%\Automation.zip" exit /b 1
+    echo if not exist "%%TEMP_DIR%%\resources\Automation.zip" exit /b 1
     echo cd /d "%%TEMP_DIR%%"
     echo call SETUP_TEAM.bat /silent "!UPDATE_PATH!" ^>nul 2^>^&1
     echo if %%errorlevel%% equ 0 echo %%SERVER_VERSION%% ^> "%%LOCAL_VERSION_FILE%%"

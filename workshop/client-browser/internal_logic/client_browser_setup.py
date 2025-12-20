@@ -769,20 +769,28 @@ def main(limit_clients: int = None):
     
     # Destination folder (inside script directory)
     dist_dir = os.path.join(SCRIPT_DIR, "For_Team_Complete")
+    resources_dir = os.path.join(dist_dir, "resources")
+    
     if not os.path.exists(dist_dir):
         os.makedirs(dist_dir)
+    if not os.path.exists(resources_dir):
+        os.makedirs(resources_dir)
     
-    # Files to copy
-    files_to_copy = {
+    # Files to copy to ROOT
+    files_to_copy_root = {
         "SETUP_TEAM.bat": os.path.join(os.path.dirname(__file__), "SETUP_TEAM.bat"),
-        "WESCOPE_BROWSER_INSTALLER.bat": os.path.join(os.path.dirname(__file__), "WESCOPE_BROWSER_INSTALLER.bat"),
-        "WESCOPE_SECURITY_WIPE.bat": os.path.join(os.path.dirname(__file__), "WESCOPE_SECURITY_WIPE.bat"),
-        "CLEANUP_POLICIES.bat": os.path.join(os.path.dirname(__file__), "CLEANUP_POLICIES.bat"),
         "TEAM_SETUP_GUIDE.md": os.path.join(os.path.dirname(__file__), "TEAM_SETUP_GUIDE.md")
     }
 
+    # Files to copy to RESOURCES (Hidden stuff)
+    files_to_copy_resources = {
+        "CLEANUP_POLICIES.bat": os.path.join(os.path.dirname(__file__), "CLEANUP_POLICIES.bat"),
+        # Removed WESCOPE_SECURITY_WIPE.bat and WESCOPE_BROWSER_INSTALLER.bat
+    }
+
     import shutil
-    for filename, src_path in files_to_copy.items():
+    # Copy Root Files
+    for filename, src_path in files_to_copy_root.items():
         try:
             if os.path.exists(src_path):
                 shutil.copy2(src_path, dist_dir)
@@ -792,19 +800,30 @@ def main(limit_clients: int = None):
         except Exception as e:
             print(f"[ERROR] Copy failed for {filename}: {e}")
 
-    # 2. Zip Shortcuts
+    # Copy Resource Files
+    for filename, src_path in files_to_copy_resources.items():
+        try:
+            if os.path.exists(src_path):
+                shutil.copy2(src_path, resources_dir)
+                print(f"[OK] Copied {filename} to {resources_dir}")
+            else:
+                print(f"[WARNING] File not found: {filename}")
+        except Exception as e:
+            print(f"[ERROR] Copy failed for {filename}: {e}")
+
+    # 2. Zip Shortcuts -> resources/Shortcuts.zip
     print("[-] Zipping Shortcuts...")
     try:
         shutil.make_archive(
-            os.path.join(dist_dir, "Shortcuts"), 
+            os.path.join(resources_dir, "Shortcuts"), 
             'zip', 
             SHORTCUT_DIR_TEAM
         )
-        print(f"[OK] Created Shortcuts.zip")
+        print(f"[OK] Created resources/Shortcuts.zip")
     except Exception as e:
         print(f"[ERROR] Zipping shortcuts failed: {e}")
 
-    # 3. Create Clean Automation.zip (Universal)
+    # 3. Create Clean Automation.zip -> resources/Automation.zip
     print("[-] Creating Clean Automation.zip (Icons, Dashboards Only)...")
     if IS_WINDOWS:
         automation_src = r"C:\Automation"
@@ -820,13 +839,13 @@ def main(limit_clients: int = None):
     create_subset_zip(
         automation_src, 
         folders_to_zip, 
-        os.path.join(dist_dir, "Automation.zip")
+        os.path.join(resources_dir, "Automation.zip")
     )
 
-    # 4. Generate version file (for auto-update tracking)
+    # 4. Generate version file -> resources/version.txt
     from datetime import datetime
     version_timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-    version_file = os.path.join(dist_dir, "version.txt")
+    version_file = os.path.join(resources_dir, "version.txt")
     try:
         with open(version_file, 'w') as f:
             f.write(version_timestamp)
@@ -843,12 +862,36 @@ def main(limit_clients: int = None):
             if not os.path.exists(PUBLISH_PATH):
                 os.makedirs(PUBLISH_PATH)
             
-            # Copy all files from dist_dir to PUBLISH_PATH
+            # Clean old files in PUBLISH_PATH to remove deprecated junk
+            # BE CAREFUL: Only delete if we are sure it's the right folder
+            # For safety, we will just overwrite/add, but maybe we should delete deprecated files explicitly
+            deprecated = ["WESCOPE_BROWSER_INSTALLER.bat", "WESCOPE_SECURITY_WIPE.bat", "Automation.zip", "Shortcuts.zip", "version.txt", "CLEANUP_POLICIES.bat"]
+            for d_file in deprecated:
+                d_path = os.path.join(PUBLISH_PATH, d_file)
+                if os.path.exists(d_path):
+                    try:
+                        os.remove(d_path)
+                        print(f"  [Clean] Removed old file: {d_file}")
+                    except: pass
+            
+            # Copy ROOT files
             for item in os.listdir(dist_dir):
                 s = os.path.join(dist_dir, item)
                 d = os.path.join(PUBLISH_PATH, item)
                 if os.path.isfile(s):
                     shutil.copy2(s, d)
+            
+            # Copy RESOURCES folder
+            pub_res = os.path.join(PUBLISH_PATH, "resources")
+            if not os.path.exists(pub_res):
+                os.makedirs(pub_res)
+            
+            for item in os.listdir(resources_dir):
+                s = os.path.join(resources_dir, item)
+                d = os.path.join(pub_res, item)
+                if os.path.isfile(s):
+                    shutil.copy2(s, d)
+
             print("[OK] Published successfully to Google Drive.")
         except Exception as e:
             print(f"[WARNING] Auto-publish failed: {e}")
