@@ -4,21 +4,6 @@ REM WeScope Team - Unified Client Browser Setup & Auto-Updater
 REM =============================================================================
 setlocal enabledelayedexpansion
 
-REM Parse Arguments
-set SILENT_MODE=0
-set "UPDATE_SOURCE_OVERRIDE="
-
-:parse_args
-if "%~1"=="" goto :args_done
-if /i "%~1"=="/silent" (
-    set SILENT_MODE=1
-) else (
-    set "UPDATE_SOURCE_OVERRIDE=%~1"
-)
-shift
-goto :parse_args
-:args_done
-
 echo.
 echo ================================================================================
 echo WeScope Team Browser Setup (Unified Installer)
@@ -28,27 +13,19 @@ echo.
 REM 1. Check Administrator Privileges
 net session >nul 2>&1
 if %errorlevel% neq 0 (
-    echo [ERROR] This script MUST be run as Administrator!
+    echo [ERROR] This script must be run as Administrator!
     echo.
-    echo Please right-click the file and select "Run as Administrator".
-    echo.
+    echo Right-click this file and select "Run as Administrator"
     pause
     exit /b 1
 )
-echo   [OK] Administrator privileges confirmed.
 
 REM 2. Environment Setup
 set SCRIPT_DIR=%~dp0
 set AUTO_DIR=C:\Automation
 set PROFILE_DIR=%AUTO_DIR%\Profiles
 set SHORTCUT_TARGET_NAME=Client Systems Shortcuts
-
-REM Detect OneDrive Desktop (Fix for missing icons)
-if exist "%USERPROFILE%\OneDrive\Desktop" (
-    set "SHORTCUT_PATH=%USERPROFILE%\OneDrive\Desktop\%SHORTCUT_TARGET_NAME%"
-) else (
-    set "SHORTCUT_PATH=%USERPROFILE%\Desktop\%SHORTCUT_TARGET_NAME%"
-)
+set SHORTCUT_PATH=%USERPROFILE%\Desktop\%SHORTCUT_TARGET_NAME%
 
 cd /d "%SCRIPT_DIR%"
 
@@ -95,6 +72,7 @@ echo   [OK] Assets installed to %AUTO_DIR%
 echo   [OK] Shortcuts installed to Desktop\%SHORTCUT_TARGET_NAME%
 
 REM 6. Optional Auto-Update Setup
+echo.
 echo [Step 4/4] Configuring Auto-Updates...
 
 REM Check if we are running from a sync folder (Google Drive, etc.)
@@ -103,7 +81,7 @@ echo %SCRIPT_DIR% | findstr /i "Google" >nul && set IS_SYNC_FOLDER=1
 echo %SCRIPT_DIR% | findstr /i "OneDrive" >nul && set IS_SYNC_FOLDER=1
 echo %SCRIPT_DIR% | findstr /i "Shared drives" >nul && set IS_SYNC_FOLDER=1
 
-if "%SILENT_MODE%"=="1" (
+if "%1"=="/silent" (
     set SETUP_AUTO=Y
 ) else (
     echo.
@@ -115,21 +93,12 @@ if "%SILENT_MODE%"=="1" (
 if /i "%SETUP_AUTO%"=="Y" (
     REM Use detected path or prompt if not found
     set UPDATE_PATH=%SCRIPT_DIR%
-    
-    REM Apply Override if provided (e.g. from Launcher)
-    if defined UPDATE_SOURCE_OVERRIDE (
-        set "UPDATE_PATH=!UPDATE_SOURCE_OVERRIDE!"
-        echo   [INFO] Using override source: !UPDATE_PATH!
-    )
-
-    if not defined UPDATE_SOURCE_OVERRIDE (
-        if "%IS_SYNC_FOLDER%"=="0" (
-            if "%SILENT_MODE%"=="0" (
-                echo.
-                echo [WARNING] Could not automatically detect Google Drive path.
-                echo Please paste the path to the 'For_Team_Complete' folder on your Drive:
-                set /p UPDATE_PATH="Path: "
-            )
+    if "%IS_SYNC_FOLDER%"=="0" (
+        if not "%1"=="/silent" (
+            echo.
+            echo [WARNING] Could not automatically detect Google Drive path.
+            echo Please paste the path to the 'For_Team_Complete' folder on your Drive:
+            set /p UPDATE_PATH="Path: "
         )
     )
     
@@ -179,7 +148,7 @@ if /i "%SETUP_AUTO%"=="Y" (
     schtasks /create /tn "WeScope Browser Auto-Update" /tr "wscript.exe //B \"%AUTO_DIR%\silent_run.vbs\"" /sc minute /mo 15 /rl highest /f >nul 2>&1
     
     if !errorlevel! equ 0 (
-        echo   [OK] Auto-update scheduled (every 15 mins - SILENT^)
+        echo   [OK] Auto-update scheduled (every 15 mins - SILENT)
         REM Initialize version file
         if exist "version.txt" copy /y "version.txt" "%AUTO_DIR%\.version" >nul
     ) else (
@@ -193,5 +162,5 @@ echo.
 echo ================================================================================
 echo SUCCESS! Setup Complete.
 echo ================================================================================
-if "%SILENT_MODE%"=="0" pause
+if not "%1"=="/silent" pause
 exit /b 0
