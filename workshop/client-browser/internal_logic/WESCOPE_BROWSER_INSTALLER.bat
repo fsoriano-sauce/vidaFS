@@ -1,19 +1,27 @@
 @echo off
 REM =============================================================================
-REM WeScope Browser - Unified Installer Launcher (v3.5)
+REM WeScope Browser - Unified Installer Launcher (Simple Version)
 REM =============================================================================
 setlocal enabledelayedexpansion
 
-:: 1. Auto-Elevate to Administrator (Using FULL path %~f0)
+:: 1. Check for Administrator Privileges
 net session >nul 2>&1
 if %errorlevel% neq 0 (
-    echo [INFO] Requesting Administrator privileges...
-    :: We use %~f0 to pass the ABSOLUTE path to the elevated process
-    powershell -Command "Start-Process -FilePath '%~f0' -Verb RunAs"
+    echo.
+    echo ======================================================================
+    echo  [ERROR] ADMINISTRATOR PRIVILEGES REQUIRED
+    echo ======================================================================
+    echo.
+    echo  You simply double-clicked this file.
+    echo.
+    echo  Please RIGHT-CLICK the file and select "Run as Administrator".
+    echo.
+    echo ======================================================================
+    pause
     exit /b
 )
 
-:: 2. Fix Working Directory (Force it to the folder where THIS script lives)
+:: 2. Fix Working Directory
 cd /d "%~dp0"
 
 echo.
@@ -23,7 +31,7 @@ echo  --------------------------------------------------
 echo.
 echo  [1/2] Reaching out to WeScope Google Drive...
 
-:: 3. Define Master Path (The brains on G:)
+:: 3. Define Master Path
 set "MASTER_PATH=G:\Shared drives\Client Shortcuts\For_Team_Complete\SETUP_TEAM.bat"
 
 :: 4. Check for G: Drive
@@ -40,7 +48,7 @@ if not exist "G:\" (
 if not exist "%MASTER_PATH%" (
     echo.
     echo  [ERROR] Master Installer not found on G: Drive.
-    echo  Checked: "%MASTER_PATH%"
+    echo  Path checked: "%MASTER_PATH%"
     echo.
     pause
     exit /b 1
