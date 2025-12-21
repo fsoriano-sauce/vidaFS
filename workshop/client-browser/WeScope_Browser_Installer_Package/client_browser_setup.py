@@ -765,7 +765,7 @@ def main(limit_clients: int = None):
     print("="*80)
     
     # Destination folder (inside script directory)
-    dist_dir = os.path.join(SCRIPT_DIR, "For_Team_Complete")
+    dist_dir = os.path.join(SCRIPT_DIR, "Script_Output_For_Distribution")
     resources_dir = os.path.join(dist_dir, "resources")
     
             # Clean output directories to ensure no deprecated files persist
