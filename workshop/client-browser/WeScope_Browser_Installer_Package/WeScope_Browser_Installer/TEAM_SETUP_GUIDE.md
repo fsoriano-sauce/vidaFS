@@ -28,7 +28,7 @@
 3. Ensure your Google Drive is mounted as the **G:** drive (this is the default).
 
 ### Chrome shows "Managed by your organization"
-1. Browse to `G:\Shared drives\Client Shortcuts\Script_Output_For_Distribution`
+1. Browse to `G:\Shared drives\Client Shortcuts\WeScope_Browser_Installer`
 2. Run **`CLEANUP_POLICIES.bat`** as Administrator.
 3. Close all Chrome windows and restart.
 

@@ -765,7 +765,7 @@ def main(limit_clients: int = None):
     print("="*80)
     
     # Destination folder (inside script directory)
-    dist_dir = os.path.join(SCRIPT_DIR, "Script_Output_For_Distribution")
+    dist_dir = os.path.join(SCRIPT_DIR, "WeScope_Browser_Installer")
     resources_dir = os.path.join(dist_dir, "resources")
     
             # Clean output directories to ensure no deprecated files persist
@@ -794,7 +794,6 @@ def main(limit_clients: int = None):
     # Files to copy to ROOT
     files_to_copy_root = {
         "SETUP_TEAM.bat": os.path.join(os.path.dirname(__file__), "SETUP_TEAM.bat"),
-        "WESCOPE_BROWSER_INSTALLER.bat": os.path.join(os.path.dirname(__file__), "WESCOPE_BROWSER_INSTALLER.bat"),
         "TEAM_SETUP_GUIDE.md": os.path.join(os.path.dirname(__file__), "TEAM_SETUP_GUIDE.md")
     }
 
@@ -878,7 +877,7 @@ def main(limit_clients: int = None):
     
     # --- AUTO-PUBLISH TO GOOGLE DRIVE (OPTIONAL) ---
     # Update this path to your G-Drive shared folder
-    PUBLISH_PATH = r"G:\Shared drives\Client Shortcuts\Script_Output_For_Distribution"
+    PUBLISH_PATH = r"G:\Shared drives\Client Shortcuts\WeScope_Browser_Installer"
     if os.path.exists(os.path.dirname(PUBLISH_PATH)):
         print(f"\nPublishing to Google Drive: {PUBLISH_PATH}...")
         try:

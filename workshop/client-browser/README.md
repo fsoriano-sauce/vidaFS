@@ -10,20 +10,22 @@ Automated system to create custom Chrome browser profiles with desktop shortcuts
    ```
    This runs the python script located in `WeScope_Browser_Installer_Package/client_browser_setup.py`.
 
-2. **Distribute**: The script creates `Script_Output_For_Distribution/` which contains the installer.
+2. **Distribute**: The script creates `WeScope_Browser_Installer/` which contains the installer.
    - This folder is automatically published to Google Drive if configured.
 
-3. **Team Installation**: Team members run `WESCOPE_BROWSER_INSTALLER.bat` (Launcher v4.0).
+3. **Team Installation**: Team members navigate to the G-Drive folder and run `SETUP_TEAM.bat` as Administrator.
 
 ## Folder Structure
 
 - **WeScope_Browser_Installer_Package/**: Source code for the installer.
   - `client_browser_setup.py`: Main Python script.
   - `SETUP_TEAM.bat`: The core installer logic (Safe Installer with atomic extraction).
-  - `WESCOPE_BROWSER_INSTALLER.bat`: The user-facing launcher.
-  - `Script_Output_For_Distribution/`: **Generated Output** - The distributable package.
+  - `WeScope_Browser_Installer/`: **Generated Output** - The distributable package.
 - **3_EMERGENCY_WIPE.bat**: Utility to wipe all WeScope profiles/shortcuts from a machine.
 - **1_ADMIN_Refresh_Systems.bat**: Wrapper to run the generation script.
+
+## Historical Note: Launcher Strategy
+*Previously, we used a `WESCOPE_BROWSER_INSTALLER.bat` launcher to copy files locally before running. This was removed in v4.1 in favor of a simpler direct-run approach from the G-Drive to reduce complexity and avoid execution policy errors.*
 
 ## Features
 
