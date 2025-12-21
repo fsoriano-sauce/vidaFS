@@ -809,6 +809,13 @@ def main(limit_clients: int = None):
     for filename, src_path in files_to_copy_root.items():
         try:
             if os.path.exists(src_path):
+                # Force delete destination first to ensure update and timestamp refresh
+                dest_path = os.path.join(dist_dir, filename)
+                if os.path.exists(dest_path):
+                    try:
+                        os.remove(dest_path)
+                    except: pass
+                
                 shutil.copy2(src_path, dist_dir)
                 print(f"[OK] Copied {filename} to {dist_dir}")
             else:
