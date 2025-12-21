@@ -878,7 +878,7 @@ def main(limit_clients: int = None):
     
     # --- AUTO-PUBLISH TO GOOGLE DRIVE (OPTIONAL) ---
     # Update this path to your G-Drive shared folder
-    PUBLISH_PATH = r"G:\Shared drives\Client Shortcuts\For_Team_Complete"
+    PUBLISH_PATH = r"G:\Shared drives\Client Shortcuts\Script_Output_For_Distribution"
     if os.path.exists(os.path.dirname(PUBLISH_PATH)):
         print(f"\nPublishing to Google Drive: {PUBLISH_PATH}...")
         try:
