@@ -3,6 +3,7 @@ REM ============================================================================
 REM WeScope Team - Unified Client Browser Setup & Auto-Updater
 REM =============================================================================
 setlocal enabledelayedexpansion
+pushd "%~dp0"
 
 REM --- DEBUG LOGGING SETUP ---
 if not exist "C:\Automation" mkdir "C:\Automation"
@@ -60,16 +61,14 @@ REM Determine Shortcut Path
 if defined TARGET_DESKTOP_ARG (
     echo [INFO] Using passed desktop path: %TARGET_DESKTOP_ARG%
     echo   [INFO] Using passed desktop path: %TARGET_DESKTOP_ARG% >> "%LOG_FILE%"
-    set "SHORTCUT_PATH=%TARGET_DESKTOP_ARG%\%SHORTCUT_TARGET_NAME%"
+    set "DESKTOP_DIR=%TARGET_DESKTOP_ARG%"
 ) else (
-    REM Auto-detect (Fallback or Auto-Update mode)
-    if exist "%USERPROFILE%\OneDrive\Desktop" (
-        set "SHORTCUT_PATH=%USERPROFILE%\OneDrive\Desktop\%SHORTCUT_TARGET_NAME%"
-    ) else (
-        set "SHORTCUT_PATH=%USERPROFILE%\Desktop\%SHORTCUT_TARGET_NAME%"
-    )
-    echo   [INFO] Auto-detected desktop path >> "%LOG_FILE%"
+    REM Auto-detect using PowerShell (works for OneDrive, redirected folders, etc.)
+    for /f "usebackq delims=" %%D in (`powershell -NoProfile -Command "[Environment]::GetFolderPath('Desktop')"`) do set "DESKTOP_DIR=%%D"
+    echo   [INFO] Auto-detected desktop path: !DESKTOP_DIR! >> "%LOG_FILE%"
 )
+
+set "SHORTCUT_PATH=%DESKTOP_DIR%\%SHORTCUT_TARGET_NAME%"
 
 echo   Final Shortcut Path: %SHORTCUT_PATH% >> "%LOG_FILE%"
 
@@ -123,22 +122,51 @@ if %errorlevel% neq 0 (
 )
 popd
 
-REM Extract Shortcuts to Desktop
+REM Extract Shortcuts (Atomic Method)
 echo   [Step 3/4] Unpacking shortcuts...
 echo   Target: %SHORTCUT_PATH% >> "%LOG_FILE%"
 
-REM Debug the powershell command
-powershell -Command "$p = '%SHORTCUT_PATH%'; Write-Host 'PS Target: ' $p; if (Test-Path $p) { Remove-Item $p -Recurse -Force }; New-Item -ItemType Directory -Path $p -Force | Out-Null; Expand-Archive -Path '%RES_DIR%\Shortcuts.zip' -DestinationPath $p -Force" >> "%LOG_FILE%" 2>&1
+set "STAGE_DIR=%TEMP%\WeScopeShortcuts_%RANDOM%%RANDOM%"
+if exist "%STAGE_DIR%" rmdir /s /q "%STAGE_DIR%" >> "%LOG_FILE%" 2>&1
+mkdir "%STAGE_DIR%" >> "%LOG_FILE%" 2>&1
+
+REM Try tar first (reliable on Win10/11), PS fallback if tar fails
+tar -xf "%RES_DIR%\Shortcuts.zip" -C "%STAGE_DIR%" >> "%LOG_FILE%" 2>&1
+if %errorlevel% neq 0 (
+    echo [WARN] tar failed; trying Expand-Archive >> "%LOG_FILE%"
+    powershell -NoProfile -ExecutionPolicy Bypass -Command ^
+      "$ErrorActionPreference='Stop'; Expand-Archive -LiteralPath '%RES_DIR%\Shortcuts.zip' -DestinationPath '%STAGE_DIR%' -Force" ^
+      >> "%LOG_FILE%" 2>&1
+    if !errorlevel! neq 0 (
+        echo [ERROR] Expand-Archive failed. >> "%LOG_FILE%"
+        echo [ERROR] Shortcut extraction failed. See %LOG_FILE%
+        exit /b 1
+    )
+)
+
+REM Verify we actually extracted shortcuts
+dir /b "%STAGE_DIR%\*.lnk" >nul 2>&1
+if %errorlevel% neq 0 (
+    echo [ERROR] No .lnk files found after extraction. >> "%LOG_FILE%"
+    echo [ERROR] Zip structure wrong or extraction failed. See %LOG_FILE%
+    exit /b 1
+)
+
+REM Swap into place only after successful extraction
+if exist "%SHORTCUT_PATH%" rmdir /s /q "%SHORTCUT_PATH%" >> "%LOG_FILE%" 2>&1
+mkdir "%SHORTCUT_PATH%" >> "%LOG_FILE%" 2>&1
+xcopy "%STAGE_DIR%\*" "%SHORTCUT_PATH%\" /E /I /Y >> "%LOG_FILE%" 2>&1
 
 if %errorlevel% neq 0 (
-    echo [ERROR] PowerShell unzip failed. Exit Code: %errorlevel% >> "%LOG_FILE%"
-    echo [ERROR] Failed to unpack shortcuts. Check %LOG_FILE%
-    pause
-) else (
-    echo   [OK] Assets installed to %AUTO_DIR%
-    echo   [OK] Shortcuts installed to Desktop\%SHORTCUT_TARGET_NAME%
-    echo   [OK] Success >> "%LOG_FILE%"
+    echo [ERROR] Failed copying shortcuts to Desktop path. >> "%LOG_FILE%"
+    echo [ERROR] Failed copying shortcuts. See %LOG_FILE%
+    exit /b 1
 )
+
+rmdir /s /q "%STAGE_DIR%" >> "%LOG_FILE%" 2>&1
+echo   [OK] Assets installed to %AUTO_DIR%
+echo   [OK] Shortcuts installed to Desktop\%SHORTCUT_TARGET_NAME%
+echo   [OK] Success >> "%LOG_FILE%"
 
 REM 6. Optional Auto-Update Setup
 echo.
@@ -173,7 +201,7 @@ if /i "%SETUP_AUTO%"=="Y" (
             if not "%~1"=="/silent" (
                 echo.
                 echo [WARNING] Could not automatically detect Google Drive path.
-                echo Please paste the path to the 'For_Team_Complete' folder on your Drive:
+                echo Please paste the path to the 'Script_Output_For_Distribution' folder on your Drive:
                 set /p UPDATE_PATH="Path: "
             )
         )
@@ -239,5 +267,6 @@ echo.
 echo ================================================================================
 echo SUCCESS! Setup Complete.
 echo ================================================================================
+popd
 if not "%~1"=="/silent" pause
 exit /b 0

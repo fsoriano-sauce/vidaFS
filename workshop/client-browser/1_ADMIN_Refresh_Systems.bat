@@ -7,7 +7,7 @@ echo This script fetches the latest data from BigQuery and updates all shortcuts
 echo It will automatically publish updates to Google Drive for the team.
 echo.
 
-python "%~dp0internal_logic\client_browser_setup.py"
+python "%~dp0WeScope_Browser_Installer_Package\client_browser_setup.py"
 
 if %errorlevel% neq 0 (
     echo.
@@ -23,5 +23,6 @@ echo Updates have been published to Google Drive.
 echo ================================================================================
 echo.
 pause
+
 
 
