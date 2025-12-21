@@ -4,6 +4,19 @@ REM WeScope Team - Unified Client Browser Setup & Auto-Updater
 REM =============================================================================
 setlocal enabledelayedexpansion
 
+REM --- DEBUG LOGGING SETUP ---
+if not exist "C:\Automation" mkdir "C:\Automation"
+echo PROOF > "C:\Automation\proof.txt"
+echo [DEBUG] SETUP_TEAM.bat launched! >> "C:\Automation\proof.txt"
+echo [DEBUG] Args: %* >> "C:\Automation\proof.txt"
+echo [DEBUG] Args (Console): %*
+set "LOG_FILE=C:\Automation\setup_debug.log"
+echo [%DATE% %TIME%] Setup Started > "%LOG_FILE%"
+echo   User: %USERNAME% >> "%LOG_FILE%"
+echo   CD: %CD% >> "%LOG_FILE%"
+echo   Arg1 (Raw): %1 >> "%LOG_FILE%"
+echo   Arg2 (Raw): %2 >> "%LOG_FILE%"
+
 echo.
 echo ================================================================================
 echo WeScope Team Browser Setup (Unified Installer)
@@ -13,6 +26,7 @@ echo.
 REM 1. Check Administrator Privileges
 net session >nul 2>&1
 if %errorlevel% neq 0 (
+    echo [ERROR] Not running as Admin >> "%LOG_FILE%"
     echo [ERROR] This script must be run as Administrator!
     echo.
     echo Right-click this file and select "Run as Administrator"
@@ -25,14 +39,39 @@ set SCRIPT_DIR=%~dp0
 set AUTO_DIR=C:\Automation
 set PROFILE_DIR=%AUTO_DIR%\Profiles
 set SHORTCUT_TARGET_NAME=Client Systems Shortcuts
-set SHORTCUT_PATH=%USERPROFILE%\Desktop\%SHORTCUT_TARGET_NAME%
 
-REM Detect OneDrive Desktop (Fix for missing icons)
-if exist "%USERPROFILE%\OneDrive\Desktop" (
-    set "SHORTCUT_PATH=%USERPROFILE%\OneDrive\Desktop\%SHORTCUT_TARGET_NAME%"
+REM Handle Arguments (Source Path & Optional Desktop Path)
+set "UPDATE_SOURCE_OVERRIDE="
+set "TARGET_DESKTOP_ARG="
+
+if /i "%~1"=="/silent" (
+    REM Auto-Update Mode: Arg1=/silent, Arg2=Source
+    set SETUP_AUTO=Y
+    if not "%~2"=="" set "UPDATE_SOURCE_OVERRIDE=%~2"
+    echo   Mode: Auto-Update >> "%LOG_FILE%"
 ) else (
-    set "SHORTCUT_PATH=%USERPROFILE%\Desktop\%SHORTCUT_TARGET_NAME%"
+    REM Install Mode: Arg1=Source, Arg2=DesktopPath
+    if not "%~1"=="" set "UPDATE_SOURCE_OVERRIDE=%~1"
+    if not "%~2"=="" set "TARGET_DESKTOP_ARG=%~2"
+    echo   Mode: Install >> "%LOG_FILE%"
 )
+
+REM Determine Shortcut Path
+if defined TARGET_DESKTOP_ARG (
+    echo [INFO] Using passed desktop path: %TARGET_DESKTOP_ARG%
+    echo   [INFO] Using passed desktop path: %TARGET_DESKTOP_ARG% >> "%LOG_FILE%"
+    set "SHORTCUT_PATH=%TARGET_DESKTOP_ARG%\%SHORTCUT_TARGET_NAME%"
+) else (
+    REM Auto-detect (Fallback or Auto-Update mode)
+    if exist "%USERPROFILE%\OneDrive\Desktop" (
+        set "SHORTCUT_PATH=%USERPROFILE%\OneDrive\Desktop\%SHORTCUT_TARGET_NAME%"
+    ) else (
+        set "SHORTCUT_PATH=%USERPROFILE%\Desktop\%SHORTCUT_TARGET_NAME%"
+    )
+    echo   [INFO] Auto-detected desktop path >> "%LOG_FILE%"
+)
+
+echo   Final Shortcut Path: %SHORTCUT_PATH% >> "%LOG_FILE%"
 
 cd /d "%SCRIPT_DIR%"
 
@@ -43,12 +82,24 @@ echo   Working Dir: %CD%
 REM Check for resources folder
 set "RES_DIR=%SCRIPT_DIR%resources"
 if not exist "%RES_DIR%" (
-    REM Fallback for legacy flat structure (just in case)
+    REM Fallback for legacy flat structure
     if exist "Automation.zip" set "RES_DIR=%SCRIPT_DIR%"
 )
 
-if not exist "%RES_DIR%\Automation.zip" ( echo [ERROR] Automation.zip missing in %RES_DIR%! & pause & exit /b 1 )
-if not exist "%RES_DIR%\Shortcuts.zip" ( echo [ERROR] Shortcuts.zip missing in %RES_DIR%! & pause & exit /b 1 )
+echo   Resource Dir: %RES_DIR% >> "%LOG_FILE%"
+
+if not exist "%RES_DIR%\Automation.zip" ( 
+    echo [ERROR] Automation.zip missing in %RES_DIR%! 
+    echo [ERROR] Automation.zip missing >> "%LOG_FILE%"
+    pause 
+    exit /b 1 
+)
+if not exist "%RES_DIR%\Shortcuts.zip" ( 
+    echo [ERROR] Shortcuts.zip missing in %RES_DIR%! 
+    echo [ERROR] Shortcuts.zip missing >> "%LOG_FILE%"
+    pause 
+    exit /b 1 
+)
 echo   [OK] Found assets in %RES_DIR%
 
 REM 4. Chrome Policy Cleanup (Proactive Fix)
@@ -68,15 +119,26 @@ echo   [Step 3/4] Unpacking assets...
 pushd C:\
 tar -xf "%RES_DIR%\Automation.zip" >nul 2>&1
 if %errorlevel% neq 0 (
-    powershell -Command "Expand-Archive -Path '%RES_DIR%\Automation.zip' -DestinationPath 'C:\' -Force"
+    powershell -Command "Expand-Archive -Path '%RES_DIR%\Automation.zip' -DestinationPath 'C:\' -Force" >> "%LOG_FILE%" 2>&1
 )
 popd
 
 REM Extract Shortcuts to Desktop
 echo   [Step 3/4] Unpacking shortcuts...
-powershell -Command "$p = '%SHORTCUT_PATH%'; if (Test-Path $p) { Remove-Item $p -Recurse -Force }; New-Item -ItemType Directory -Path $p -Force | Out-Null; Expand-Archive -Path '%RES_DIR%\Shortcuts.zip' -DestinationPath $p -Force"
-echo   [OK] Assets installed to %AUTO_DIR%
-echo   [OK] Shortcuts installed to Desktop\%SHORTCUT_TARGET_NAME%
+echo   Target: %SHORTCUT_PATH% >> "%LOG_FILE%"
+
+REM Debug the powershell command
+powershell -Command "$p = '%SHORTCUT_PATH%'; Write-Host 'PS Target: ' $p; if (Test-Path $p) { Remove-Item $p -Recurse -Force }; New-Item -ItemType Directory -Path $p -Force | Out-Null; Expand-Archive -Path '%RES_DIR%\Shortcuts.zip' -DestinationPath $p -Force" >> "%LOG_FILE%" 2>&1
+
+if %errorlevel% neq 0 (
+    echo [ERROR] PowerShell unzip failed. Exit Code: %errorlevel% >> "%LOG_FILE%"
+    echo [ERROR] Failed to unpack shortcuts. Check %LOG_FILE%
+    pause
+) else (
+    echo   [OK] Assets installed to %AUTO_DIR%
+    echo   [OK] Shortcuts installed to Desktop\%SHORTCUT_TARGET_NAME%
+    echo   [OK] Success >> "%LOG_FILE%"
+)
 
 REM 6. Optional Auto-Update Setup
 echo.
@@ -88,14 +150,8 @@ echo %SCRIPT_DIR% | findstr /i "Google" >nul && set IS_SYNC_FOLDER=1
 echo %SCRIPT_DIR% | findstr /i "OneDrive" >nul && set IS_SYNC_FOLDER=1
 echo %SCRIPT_DIR% | findstr /i "Shared drives" >nul && set IS_SYNC_FOLDER=1
 
-REM Parse Arguments (Launcher passes path as %1, Auto-Updater passes /silent then path)
-set "UPDATE_SOURCE_OVERRIDE="
-if /i "%~1"=="/silent" (
-    set SETUP_AUTO=Y
-    if not "%~2"=="" set "UPDATE_SOURCE_OVERRIDE=%~2"
-) else (
-    if not "%~1"=="" set "UPDATE_SOURCE_OVERRIDE=%~1"
-    
+REM Prompt for Auto-Updates if not silent
+if not "%~1"=="/silent" (
     echo.
     echo Would you like to enable automatic background updates?
     echo (Shortcuts will update every 15 mins when the admin pushes changes)
