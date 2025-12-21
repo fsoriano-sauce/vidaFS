@@ -5,9 +5,7 @@ import io
 
 # Configuration
 EXTENSIONS = {
-    "Loom": "hhoilbbpbbfbihpafjobnfffffoocoba",
     "Xactware_ClickOnce": "ghonblphoimcehigdfdmomaochonfobc",
-    # "Autofill": "nlpjybdlchjlaflgapifsdiondsimfn" # Uncomment if confirmed
 }
 
 DEST_DIR = r"C:\Automation\Extensions"
