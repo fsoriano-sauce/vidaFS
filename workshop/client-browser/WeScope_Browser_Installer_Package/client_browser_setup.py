@@ -733,8 +733,8 @@ def main(limit_clients: int = None):
         extensions_path = r"C:\Automation\Extensions"
         load_extensions = []
         if os.path.exists(extensions_path):
-            # Check for specific extensions
-            ext_list = ["Loom", "Xactware_ClickOnce"]
+            # Check for specific extensions (Xactware ClickOnce only)
+            ext_list = ["Xactware_ClickOnce"]
             for ext in ext_list:
                 ep = os.path.join(extensions_path, ext)
                 if os.path.exists(ep):
