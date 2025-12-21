@@ -729,23 +729,9 @@ def main(limit_clients: int = None):
         if not os.path.exists(profile_path):
              os.makedirs(profile_path)
              
-        # Add Extensions if they exist
-        extensions_path = r"C:\Automation\Extensions"
-        load_extensions = []
-        if os.path.exists(extensions_path):
-            # Check for specific extensions
-            ext_list = ["Xactware_ClickOnce", "WeScope_Autofill"]
-            for ext in ext_list:
-                ep = os.path.join(extensions_path, ext)
-                if os.path.exists(ep):
-                    load_extensions.append(ep)
-        
-        ext_args = ""
-        if load_extensions:
-            ext_str = ",".join(load_extensions)
-            ext_args = f'--load-extension="{ext_str}"'
-
-        chrome_args = f'--user-data-dir="{profile_path}" --profile-directory="Default" {ext_args} {url_args}'
+        # Extensions are now installed via Chrome Policy (ExtensionInstallForcelist)
+        # No need for --load-extension command-line flag
+        chrome_args = f'--user-data-dir="{profile_path}" --profile-directory="Default" {url_args}'
         
         if not os.path.exists(SHORTCUT_DIR_TEAM):
             os.makedirs(SHORTCUT_DIR_TEAM)
