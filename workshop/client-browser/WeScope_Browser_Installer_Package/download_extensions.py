@@ -6,6 +6,8 @@ import io
 # Configuration
 EXTENSIONS = {
     "Xactware_ClickOnce": "ghonblphoimcehigdfdmomaochonfobc",
+    # Note: Application Launcher For Drive extension ID not found in Chrome Web Store
+    # Users can enable it manually from chrome://extensions if needed
 }
 
 DEST_DIR = r"C:\Automation\Extensions"
