@@ -734,7 +734,7 @@ def main(limit_clients: int = None):
         load_extensions = []
         if os.path.exists(extensions_path):
             # Check for specific extensions
-            ext_list = ["Xactware_ClickOnce"]
+            ext_list = ["Xactware_ClickOnce", "WeScope_Autofill"]
             for ext in ext_list:
                 ep = os.path.join(extensions_path, ext)
                 if os.path.exists(ep):
