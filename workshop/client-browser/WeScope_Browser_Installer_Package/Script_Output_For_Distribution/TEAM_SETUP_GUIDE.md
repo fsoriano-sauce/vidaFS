@@ -28,15 +28,14 @@
 3. Ensure your Google Drive is mounted as the **G:** drive (this is the default).
 
 ### Chrome shows "Managed by your organization"
-1. Browse to `G:\Shared drives\Client Shortcuts\For_Team_Complete`
+1. Browse to `G:\Shared drives\Client Shortcuts\Script_Output_For_Distribution`
 2. Run **`CLEANUP_POLICIES.bat`** as Administrator.
 3. Close all Chrome windows and restart.
 
 ### Emergency: Security Wipe (Remove everything)
 If you need to completely remove all WeScope data (profiles, passwords, and shortcuts):
-1. Browse to `G:\Shared drives\Client Shortcuts\For_Team_Complete`
-2. Run **`WESCOPE_SECURITY_WIPE.bat`** as Administrator.
-3. Type **`WIPE`** to confirm.
+1. **Warning**: This will remove all data.
+2. Run the **`3_EMERGENCY_WIPE.bat`** script provided by Admin (not included in standard distribution).
 
 ---
 

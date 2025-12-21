@@ -74,8 +74,8 @@ dir "%TEMP_INSTALL_DIR%"
 REM Using robust PowerShell invocation with try/catch
 REM We construct a single argument string with explicit double quotes
 powershell -NoProfile -ExecutionPolicy Bypass -Command ^
-  "$src='%SOURCE_PATH%'; $desk='%USER_DESKTOP%'; $local='%TEMP_INSTALL_DIR%'; $argsList=@($src, $desk);" ^
-  "$p = Start-Process -FilePath (Join-Path $local 'SETUP_TEAM.bat') -ArgumentList $argsList -WorkingDirectory $local -Verb RunAs -Wait -PassThru;" ^
+  "$src='%SOURCE_PATH%'; $desk='%USER_DESKTOP%'; $local='%TEMP_INSTALL_DIR%'; $procArgs = '\"' + $src + '\" \"' + $desk + '\"'; " ^
+  "$p = Start-Process -FilePath (Join-Path $local 'SETUP_TEAM.bat') -ArgumentList $procArgs -WorkingDirectory $local -Verb RunAs -Wait -PassThru;" ^
   "exit $p.ExitCode"
 
 if %errorlevel% neq 0 (
