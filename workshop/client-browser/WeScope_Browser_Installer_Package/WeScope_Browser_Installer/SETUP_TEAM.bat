@@ -201,7 +201,7 @@ if /i "%SETUP_AUTO%"=="Y" (
             if not "%~1"=="/silent" (
                 echo.
                 echo [WARNING] Could not automatically detect Google Drive path.
-                echo Please paste the path to the 'Script_Output_For_Distribution' folder on your Drive:
+                echo Please paste the path to the 'WeScope_Browser_Installer' folder on your Drive:
                 set /p UPDATE_PATH="Path: "
             )
         )
