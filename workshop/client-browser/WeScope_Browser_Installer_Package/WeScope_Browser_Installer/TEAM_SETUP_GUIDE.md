@@ -1,19 +1,25 @@
 # WeScope Client Browser Setup - Team Guide
 
-## 🚀 One-Time Setup (New Team Members)
+## 🚀 Setup Instructions
 
-1.  **Download** the **`WESCOPE_BROWSER_INSTALLER.bat`** file sent by Frank.
-2.  Save it anywhere (Downloads or Desktop).
-3.  Right-click the file and select **Run as Administrator**.
-4.  **When prompted**, type **`Y`** to enable automatic background updates.
-5.  **Done!** Your shortcuts are installed in `Desktop\Client Systems Shortcuts` and will now update themselves automatically every 15 minutes.
+1.  **Navigate** to the shared folder on Google Drive:
+    `G:\Shared drives\Client Shortcuts\WeScope_Browser_Installer`
+    *(If you don't have the G: drive, ensure Google Drive for Desktop is running)*
+
+2.  **Run the Installer**:
+    *   Right-click on **`SETUP_TEAM.bat`**
+    *   Select **Run as Administrator**
+
+3.  **Follow Prompts**:
+    *   If asked, type **`Y`** to enable automatic background updates.
+
+4.  **Done!** Your shortcuts are installed in `Desktop\Client Systems Shortcuts` and will now update themselves automatically every 15 minutes.
 
 ---
 
 ## 🔄 How it Works
 
-- **Launcher Experience**: The file you download is a "launcher" that reaches out to the WeScope Google Drive to install the latest files.
-- **No Manual Downloads**: You don't need to manage zip files or folders.
+- **Direct Install**: The script runs directly from the shared drive to install shortcuts to your local desktop.
 - **Auto-Updates**: A hidden task checks for new client systems every 15 minutes.
 - **Safe**: Your saved passwords and work profiles are never touched.
 - **Silent**: Updates happen in the background without popups.
