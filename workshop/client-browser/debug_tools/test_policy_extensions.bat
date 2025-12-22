@@ -15,11 +15,11 @@ echo.
 REM Create ExtensionInstallForcelist key
 reg add "HKCU\Software\Policies\Google\Chrome\ExtensionInstallForcelist" /f >nul 2>&1
 
-REM Xactware ClickOnce Extension
-reg add "HKCU\Software\Policies\Google\Chrome\ExtensionInstallForcelist" /v "1" /t REG_SZ /d "ghonblphoimcehigdfdmomaochonfobc;file:///C:/Automation/Extensions/Xactware_ClickOnce.crx" /f >nul 2>&1
+REM Xactware ClickOnce Extension - Install from Chrome Web Store
+reg add "HKCU\Software\Policies\Google\Chrome\ExtensionInstallForcelist" /v "1" /t REG_SZ /d "ghonblphoimcehigdfdmomaochonfobc;https://clients2.google.com/service/update2/crx" /f >nul 2>&1
 
-REM WeScope Autofill Extension
-reg add "HKCU\Software\Policies\Google\Chrome\ExtensionInstallForcelist" /v "2" /t REG_SZ /d "hhoilbbpbbfbihpafjobnfffffoocoba;file:///C:/Automation/Extensions/WeScope_Autofill.crx" /f >nul 2>&1
+REM WeScope Autofill Extension - Install from Chrome Web Store
+reg add "HKCU\Software\Policies\Google\Chrome\ExtensionInstallForcelist" /v "2" /t REG_SZ /d "hhoilbbpbbfbihpafjobnfffffoocoba;https://clients2.google.com/service/update2/crx" /f >nul 2>&1
 
 echo [OK] Extension policies configured.
 echo.
