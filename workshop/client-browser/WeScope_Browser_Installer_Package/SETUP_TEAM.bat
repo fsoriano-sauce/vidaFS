@@ -143,12 +143,13 @@ REM 5b. Install Xactware ClickOnce Helper (prevents per-profile download popup)
 REM Only run on fresh install, not during auto-updates (helper persists once installed)
 if exist "%RES_DIR%\XactwareClickOnceHelper.exe" (
     echo   [Step 3a/4] Installing Xactware ClickOnce Helper...
-    REM Run silently - this installer typically doesn't need /S flag
-    start /wait "" "%RES_DIR%\XactwareClickOnceHelper.exe" >nul 2>&1
+    echo   Installing ClickOnce Helper... >> "%LOG_FILE%"
+    start /wait "" "%RES_DIR%\XactwareClickOnceHelper.exe"
     echo   [OK] Xactware ClickOnce Helper installed.
+    echo   ClickOnce Helper installed. >> "%LOG_FILE%"
 ) else (
     REM Silently skip - normal during auto-updates since EXE stays local
-    echo   [SKIP] ClickOnce Helper not in package (already installed or auto-update mode). >> "%LOG_FILE%"
+    echo   [SKIP] ClickOnce Helper not in package. >> "%LOG_FILE%"
 )
 
 REM Extract Shortcuts (Atomic Method)
