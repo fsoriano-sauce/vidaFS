@@ -139,6 +139,21 @@ if %errorlevel% neq 0 (
 )
 popd
 
+REM 5b. Install Xactware ClickOnce Helper (prevents per-profile download popup)
+echo   [Step 3a/4] Installing Xactware ClickOnce Helper...
+if exist "%RES_DIR%\XactwareClickOnceHelper.exe" (
+    start /wait "" "%RES_DIR%\XactwareClickOnceHelper.exe" /S
+    if !errorlevel! equ 0 (
+        echo   [OK] Xactware ClickOnce Helper installed.
+    ) else (
+        REM Fallback: Try running without /S flag (some versions may not support it)
+        start /wait "" "%RES_DIR%\XactwareClickOnceHelper.exe"
+        echo   [OK] Xactware ClickOnce Helper installed (interactive).
+    )
+) else (
+    echo   [SKIP] XactwareClickOnceHelper.exe not found in resources.
+)
+
 REM Extract Shortcuts (Atomic Method)
 echo   [Step 3/4] Unpacking shortcuts...
 echo   Target: %SHORTCUT_PATH% >> "%LOG_FILE%"

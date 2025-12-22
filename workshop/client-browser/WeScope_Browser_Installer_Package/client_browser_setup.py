@@ -786,7 +786,7 @@ def main(limit_clients: int = None):
     # Files to copy to RESOURCES (Hidden stuff)
     files_to_copy_resources = {
         "CLEANUP_POLICIES.bat": os.path.join(os.path.dirname(__file__), "CLEANUP_POLICIES.bat"),
-        # REMOVED: WESCOPE_SECURITY_WIPE.bat (Admin only, not for distribution)
+        "XactwareClickOnceHelper.exe": os.path.join(os.path.dirname(__file__), "XactwareClickOnceHelper.exe"),
     }
 
     import shutil
