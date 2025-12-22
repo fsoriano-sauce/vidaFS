@@ -108,23 +108,22 @@ reg delete "HKCU\Software\Policies\Google\Chrome" /v "ExtensionInstallBlacklist"
 reg delete "HKCU\Software\Policies\Google\Chrome" /v "ExtensionInstallWhitelist" /f >nul 2>&1
 echo   [OK] Policy Cleanup Complete.
 
-REM 4b. Enable Developer Mode (Required for unpacked extensions)
-echo [Step 2b/4] Enabling Developer Mode for Extensions...
-reg add "HKCU\Software\Google\Chrome\PreferenceMACs\extensions.settings" /v "developer_mode" /t REG_DWORD /d 1 /f >nul 2>&1
-echo   [OK] Developer Mode Enabled.
+REM 4b. Developer Mode step removed - not needed for policy-based Web Store installs
 
-REM 4c. Configure Chrome Extension Force Install (Policy-Based Installation)
+REM 4c. Configure Chrome Extension Force Install (Policy-Based from Chrome Web Store)
 echo [Step 2c/4] Configuring Chrome Extension Policies...
 REM Create ExtensionInstallForcelist key if it doesn't exist
 reg add "HKCU\Software\Policies\Google\Chrome\ExtensionInstallForcelist" /f >nul 2>&1
 
-REM Xactware ClickOnce Extension (ID: ghonblphoimcehigdfdmomaochonfobc)
-reg add "HKCU\Software\Policies\Google\Chrome\ExtensionInstallForcelist" /v "1" /t REG_SZ /d "ghonblphoimcehigdfdmomaochonfobc;file:///C:/Automation/Extensions/Xactware_ClickOnce.crx" /f >nul 2>&1
+REM Xactware ClickOnce Extension - Install from Chrome Web Store
+REM ID: ghonblphoimcehigdfdmomaochonfobc
+reg add "HKCU\Software\Policies\Google\Chrome\ExtensionInstallForcelist" /v "1" /t REG_SZ /d "ghonblphoimcehigdfdmomaochonfobc;https://clients2.google.com/service/update2/crx" /f >nul 2>&1
 
-REM WeScope Autofill Extension (ID: hhoilbbpbbfbihpafjobnfffffoocoba)
-reg add "HKCU\Software\Policies\Google\Chrome\ExtensionInstallForcelist" /v "2" /t REG_SZ /d "hhoilbbpbbfbihpafjobnfffffoocoba;file:///C:/Automation/Extensions/WeScope_Autofill.crx" /f >nul 2>&1
+REM WeScope Autofill Extension - Install from Chrome Web Store
+REM ID: hhoilbbpbbfbihpafjobnfffffoocoba
+reg add "HKCU\Software\Policies\Google\Chrome\ExtensionInstallForcelist" /v "2" /t REG_SZ /d "hhoilbbpbbfbihpafjobnfffffoocoba;https://clients2.google.com/service/update2/crx" /f >nul 2>&1
 
-echo   [OK] Extension Policies Configured (Force Install from Local CRX).
+echo   [OK] Extension Policies Configured (Force Install from Chrome Web Store).
 
 REM 5. Install Assets & Shortcuts
 echo [Step 3/4] Installing Assets and Shortcuts...
