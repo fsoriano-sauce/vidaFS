@@ -395,9 +395,9 @@ def clean_target_url(url: str, system_name: str = "") -> str:
          return "https://solitaire-ngs.net/DKI/Module/User/uPostLogin.aspx"
 
     # Westhill Global - Fix incorrect "app.westhillglobal.com" to "login.westhillglobal.com"
-    if "app.westhillglobal.com" in url.lower():
-        print(f"  [URL Replacement] Westhill: app. -> login.")
-        return url.lower().replace("app.westhillglobal.com", "login.westhillglobal.com")
+    if "westhillglobal.com" in url.lower():
+        print(f"  [URL Replacement] Westhill: -> login.westhillglobal.com/login")
+        return "https://login.westhillglobal.com/login"
     
     # Apply URL overrides first
     clean_url = url
@@ -456,10 +456,11 @@ def fetch_client_data(limit_clients: int = None) -> Dict[str, Dict]:
 
         data = defaultdict(lambda: {"systems": [], "is_key_account": False, "subscription_id": None, "subscription_name": "Unknown"})
         for row in results:
-            # Exclude if API Key is present, UNLESS it is Symbility
+            # Exclude if API Key is present, UNLESS it is Symbility or Alacrity
             if row.api_key:
-                is_symbility = "symbility" in str(row.login_url).lower()
-                if not is_symbility:
+                url_lower = str(row.login_url).lower()
+                is_allowed = "symbility" in url_lower or "alacrity" in url_lower
+                if not is_allowed:
                     continue
 
             if row.login_url:
