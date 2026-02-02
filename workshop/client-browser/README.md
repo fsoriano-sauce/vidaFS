@@ -35,8 +35,13 @@ Automated system to create custom Chrome browser profiles with desktop shortcuts
 - **Fetches client data from BigQuery**: Generates sorted shortcuts (1-PRO, 2-KEY, 3-NEW, 4-LEG).
 - **White-label URL fixes**: Handles NextGear, MICA, Verisk, etc.
 
-## Requirements
+## Troubleshooting
 
-- Python 3.8+
-- Google Chrome
-- BigQuery access (via `gcloud auth application-default login`)
+### Missing "Run as Administrator"
+If you do not see the **"Run as Administrator"** option when right-clicking `SETUP_TEAM`, it is likely because the file is marked as **online-only** by Google Drive. Windows cannot run administrative tasks on files that are not physically on your computer.
+
+**Fix:**
+1. Right-click the `SETUP_TEAM` file in your Google Drive folder.
+2. Select **Offline access** > **Available offline**.
+3. Wait for the cloud icon next to the file to turn into a **green checkmark**.
+4. Right-click the file again; the **"Run as Administrator"** option will now be available.
