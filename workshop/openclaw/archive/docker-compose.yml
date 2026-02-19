@@ -1,0 +1,30 @@
+# Moltbot/Clawdbot Gateway - Secure Deployment
+# Loopback-only port binding (SSH tunnel access only)
+# DO NOT MODIFY to expose ports publicly
+
+services:
+  moltbot-gateway:
+    build: .
+    image: moltbot:local
+    env_file: .env
+    environment:
+      HOME: /home/node
+      TERM: xterm-256color
+    volumes:
+      - ${CLAWDBOT_CONFIG_DIR:-/home/frank/.clawdbot}:/home/node/.clawdbot
+      - ${CLAWDBOT_WORKSPACE_DIR:-/home/frank/clawd}:/home/node/clawd
+    ports:
+      # SECURITY: Loopback-only binding - access via SSH tunnel only
+      - "127.0.0.1:18789:18789"
+      - "127.0.0.1:18790:18790"
+    stdin_open: true
+    tty: true
+    init: true
+    restart: unless-stopped
+    entrypoint: ["node", "dist/index.js"]
+    command:
+      - gateway
+      - --bind
+      - lan
+      - --port
+      - "18789"
