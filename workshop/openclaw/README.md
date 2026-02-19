@@ -260,17 +260,43 @@ The systemd service also sets:
 
 ---
 
-## Workspace Files
+## Workspace ("Brain on Disk")
 
-The agent workspace (`/home/frank/.openclaw/workspace/`) contains identity and persona files:
+The agent workspace (`/home/frank/.openclaw/workspace/`) is TapBot's persistent "brain on disk." It lives locally inside WSL and **persists across restarts**, meaning the agent retains context, memory, and skills between sessions.
 
-- `IDENTITY.md` — Agent identity definition
-- `SOUL.md` — Agent personality/soul
-- `FRANKIE_PERSONA.soul` — Custom Frankie persona
-- `USER.md` — User profile
-- `MEMORY.md` — Memory configuration
-- `AGENTS.md` — Agent definitions
-- `TOOLS.md` — Available tools documentation
+### 🧠 Memory
+
+| File / Path | Purpose |
+|---|---|
+| `MEMORY.md` | Long-term notes and accumulated knowledge |
+| `memory/YYYY-MM-DD.md` | Daily logs of activity — what was done each session |
+
+### 🪪 Identity & Persona
+
+| File | Purpose |
+|---|---|
+| `IDENTITY.md` | Agent identity definition |
+| `SOUL.md` | Agent personality / persona |
+| `FRANKIE_PERSONA.soul` | Custom Frankie persona overlay |
+| `USER.md` | User profile (about you) |
+| `AGENTS.md` | Agent definitions |
+
+### 🛠️ Skills & Tools
+
+| Path | Purpose |
+|---|---|
+| `TOOLS.md` | Available tools documentation and local config |
+| `skills/` | Custom tool integrations (e.g., Linear, GitHub, etc.) |
+
+### 📂 Working Files
+
+The workspace also holds scripts, temporary data, and downloads (e.g., audio files, Xactimate scripts). These live here unless explicitly moved to Windows.
+
+### 🔗 Cross-Filesystem Access
+
+Even though TapBot runs in Linux (WSL), it can access Windows files via `/mnt/c/Users/frank/...`. The pattern is:
+- **Workspace** → internal logic, memory, and tools
+- **Windows folders** (e.g., Desktop) → user-facing deliverables
 
 ---
 
