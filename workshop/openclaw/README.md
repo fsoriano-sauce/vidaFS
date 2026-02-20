@@ -54,10 +54,11 @@ OpenClaw (codename "moltbot") is an AI agent gateway that connects LLM models to
 See [config-reference.md](config-reference.md) for the full annotated config.
 
 ### Authentication
-- **Provider:** Google Antigravity (OAuth)
+- **Provider:** Google Antigravity (OAuth) — also Google AI direct
 - **User:** `frankie@wescope.com`
-- **LLM Model:** `google-antigravity/gemini-3-pro-high` (primary)
-- **Available models:** `gemini-3-flash`, `gemini-3-pro-high`, `claude-opus-4-6-thinking`
+- **LLM Model:** `google/gemini-3.1-pro-preview` (primary, via Google AI API)
+- **Available Antigravity models:** `gemini-3-flash`, `gemini-3-pro-high`, `gemini-3-pro-low`, `claude-opus-4-6-thinking`, `claude-opus-4-6`, `claude-sonnet-4-5`, `gpt-oss-120b-medium`
+- **Note:** See [model-registry-lag.md](model-registry-lag.md) for why the model may not be on the Antigravity provider
 
 ### Gateway
 - **Port:** 18789 (loopback only)
@@ -195,6 +196,16 @@ The gateway calls `users.info` using the **user token** (`xoxp-...`). If this to
 
 > The **bot token** (`xoxb-...`) has `users:read` and works fine.
 > This warning is non-fatal — the gateway falls back to config entries.
+
+### Model "Unknown" or "missing" after Antigravity upgrade
+
+See **[model-registry-lag.md](model-registry-lag.md)** for the full write-up.
+
+**Quick fix:** Switch to the Google AI direct provider:
+```bash
+openclaw config set agents.defaults.model.primary "google/gemini-3.1-pro-preview"
+systemctl --user restart openclaw-gateway.service
+```
 
 ---
 
