@@ -25,7 +25,7 @@
   "agents": {
     "defaults": {
       "model": {
-        "primary": "google-antigravity/gemini-3-pro-high"  // Default LLM
+        "primary": "google/gemini-3.1-pro-preview"  // Default LLM (see model-registry-lag.md)
       },
       "workspace": "/home/frank/.openclaw/workspace",
       "memorySearch": {
