@@ -233,7 +233,8 @@ The `gateway.bind` field has **strict schema validation**. Only specific values 
 
 | Value | Meaning |
 |-------|----------|
-| `"loopback"` | Bind to `127.0.0.1` only (recommended) |
+| `"loopback"` | Bind to `127.0.0.1` only (recommended for security) |
+| `"lan"` | Bind to LAN IP (required for device pairing / VS Code extension) |
 | `"all"` | ❌ **Invalid** — will crash the gateway |
 | `"0.0.0.0"` | ❌ **Invalid** — will crash the gateway |
 
