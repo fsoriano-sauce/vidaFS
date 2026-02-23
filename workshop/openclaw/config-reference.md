@@ -68,7 +68,7 @@
   "gateway": {
     "port": 18789,
     "mode": "local",
-    "bind": "loopback",      // Only accessible from localhost. ONLY valid value — "all" breaks schema validation
+    "bind": "loopback",      // Valid: "loopback" (localhost only) or "lan" (network-accessible, required for device pairing). "all" is INVALID.
     "auth": {
       "mode": "token",
       "token": "cf468190..."  // Gateway auth token (for web UI / API)
