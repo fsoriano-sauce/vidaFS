@@ -1,7 +1,7 @@
 # OpenClaw Gateway — Setup & Reference
 
-> **Last updated:** 2026-02-19
-> **Version:** OpenClaw 2026.2.18 (commit `d17a1f3`)
+> **Last updated:** 2026-02-22
+> **Version:** OpenClaw 2026.2.20 (commit `72e937a`)
 > **Host:** PrecisionDell (Windows 11 + WSL2 Ubuntu-22.04)
 
 ## Overview
@@ -46,6 +46,60 @@ OpenClaw (codename "moltbot") is an AI agent gateway that connects LLM models to
 | **Extensions** | `/home/frank/moltbot/extensions/` |
 | **Plugin SDK types** | `/home/frank/moltbot/dist/plugin-sdk/` |
 | **Node binary** | `/home/linuxbrew/.linuxbrew/Cellar/node/25.5.0/bin/node` |
+
+---
+
+## Remote Access (from Windows / AI Agents)
+
+> **Critical:** OpenClaw runs in WSL2, not native Windows. SSH to `PrecisionDell` will fail
+> (port 22 is not open). Use `wsl -e` to run commands from PowerShell.
+
+### Running commands in WSL from Windows
+
+```powershell
+# Simple commands — use wsl -e directly
+wsl -e grep -n "bind" /home/frank/.openclaw/openclaw.json
+wsl -e systemctl --user status openclaw-gateway.service --no-pager
+
+# Commands needing a login shell (for PATH, env vars)
+wsl -e bash -lc "openclaw doctor"
+
+# Reading files
+wsl -e cat /home/frank/.openclaw/openclaw.json
+```
+
+### ⚠️ PowerShell Escaping Gotcha
+
+PowerShell mangles quotes when passed through `wsl -e bash -c "..."`. Inline `sed` commands with double quotes will break silently or produce syntax errors.
+
+**Don't do this** (fails due to PowerShell quote stripping):
+```powershell
+wsl -e bash -c "sed -i 's/\"old\"/\"new\"/' /path/to/file"  # BROKEN
+```
+
+**Do this instead** — use `wsl -e` without bash wrapper, or use Python:
+```powershell
+# Option 1: wsl -e sed directly (no bash -c wrapper)
+wsl -e sed -i 's/"old"/"new"/' /path/to/file
+
+# Option 2: Python for reliable JSON edits (recommended for config)
+wsl -e python3 -c "
+import json
+with open('/home/frank/.openclaw/openclaw.json') as f:
+    config = json.load(f)
+config['gateway']['bind'] = 'loopback'
+with open('/home/frank/.openclaw/openclaw.json', 'w') as f:
+    json.dump(config, f, indent=2)
+"
+```
+
+### Filesystem Cross-Reference
+
+| From | Path |
+|------|------|
+| WSL → Windows | `/mnt/c/Users/frank/...` |
+| Windows → WSL | `\\wsl$\Ubuntu-22.04\home\frank\...` |
+| PowerShell → WSL command | `wsl -e <command>` |
 
 ---
 
@@ -138,6 +192,9 @@ openclaw config get <key>
 nano ~/.openclaw/openclaw.json
 ```
 
+> **If the config is already broken**, the CLI will refuse to run (it validates on startup).
+> You must edit the JSON file directly — see [Remote Access](#remote-access-from-windows--ai-agents).
+
 ---
 
 ## Troubleshooting
@@ -169,6 +226,34 @@ systemctl --user restart openclaw-gateway.service
 
 > **Warning:** `openclaw doctor` updates can sometimes re-inject invalid keys.
 > Always check logs after an update.
+
+### Gateway config invalid — `gateway.bind: Invalid input`
+
+The `gateway.bind` field has **strict schema validation**. Only specific values are accepted.
+
+| Value | Meaning |
+|-------|----------|
+| `"loopback"` | Bind to `127.0.0.1` only (recommended) |
+| `"all"` | ❌ **Invalid** — will crash the gateway |
+| `"0.0.0.0"` | ❌ **Invalid** — will crash the gateway |
+
+When this happens, the CLI is **completely unusable** — every command (including `openclaw config set` and `openclaw doctor --fix`) will fail with the same validation error.
+
+**Fix** (must edit JSON directly since CLI is broken):
+```powershell
+# From Windows PowerShell — use Python for reliable JSON editing
+wsl -e python3 -c "
+import json
+f = '/home/frank/.openclaw/openclaw.json'
+c = json.load(open(f))
+c['gateway']['bind'] = 'loopback'
+json.dump(c, open(f, 'w'), indent=2)
+print('Fixed: gateway.bind set to loopback')
+"
+
+# Then restart
+wsl -e bash -lc "systemctl --user restart openclaw-gateway.service"
+```
 
 ### Gateway crash loop
 
