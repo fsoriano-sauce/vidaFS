@@ -1,12 +1,13 @@
 # OpenClaw Gateway — Setup & Reference
 
-> **Last updated:** 2026-02-22
-> **Version:** OpenClaw 2026.2.20 (commit `72e937a`)
-> **Host:** PrecisionDell (Windows 11 + WSL2 Ubuntu-22.04)
+> **Last updated:** 2026-02-26
+> **Version:** OpenClaw 2026.2.26
+> **Host:** Mac Mini (macOS 26.3, Apple Silicon)
+> **Migrated from:** PrecisionDell (Windows 11 + WSL2 Ubuntu-22.04) on 2026-02-26
 
 ## Overview
 
-OpenClaw (codename "moltbot") is an AI agent gateway that connects LLM models to messaging channels (Slack, etc.) with plugin support, voice capabilities, and a web UI. It runs **natively in WSL2** as a systemd user service.
+OpenClaw (codename "moltbot") is an AI agent gateway that connects LLM models to messaging channels (Slack, etc.) with plugin support, voice capabilities, and a web UI. It runs **natively on macOS** as a launchd user agent.
 
 ---
 
@@ -14,19 +15,16 @@ OpenClaw (codename "moltbot") is an AI agent gateway that connects LLM models to
 
 ```
 ┌──────────────────────────────────────────────────────────┐
-│  Windows 11 (PrecisionDell)                              │
-│  ┌────────────────────────────────────────────────────┐  │
-│  │  WSL2 (Ubuntu-22.04)                               │  │
-│  │                                                    │  │
-│  │  systemd user service                              │  │
-│  │  └─ openclaw-gateway.service                       │  │
-│  │     └─ node dist/index.js gateway --port 18789     │  │
-│  │                                                    │  │
-│  │  ┌──────────┐  ┌──────────┐  ┌──────────────────┐ │  │
-│  │  │ Slack    │  │ Web UI   │  │ Google           │ │  │
-│  │  │ (Socket) │  │ :18789   │  │ Antigravity Auth │ │  │
-│  │  └──────────┘  └──────────┘  └──────────────────┘ │  │
-│  └────────────────────────────────────────────────────┘  │
+│  Mac Mini (macOS 26.3, Apple Silicon)                    │
+│                                                          │
+│  launchd user agent                                      │
+│  └─ com.openclaw.gateway                                 │
+│     └─ node dist/index.js gateway --port 18789           │
+│                                                          │
+│  ┌──────────┐  ┌──────────┐  ┌──────────────────┐       │
+│  │ Slack    │  │ Web UI   │  │ Google AI         │       │
+│  │ (Socket) │  │ :18789   │  │ (Gemini API)     │       │
+│  └──────────┘  └──────────┘  └──────────────────┘       │
 └──────────────────────────────────────────────────────────┘
 ```
 
@@ -36,70 +34,42 @@ OpenClaw (codename "moltbot") is an AI agent gateway that connects LLM models to
 
 | What | Path |
 |------|------|
-| **Source code** | `/home/frank/moltbot/` |
-| **Config file** | `/home/frank/.openclaw/openclaw.json` |
-| **Environment** | `/home/frank/.openclaw/.env` |
-| **Workspace** | `/home/frank/.openclaw/workspace/` |
-| **Agent sessions** | `/home/frank/.openclaw/agents/main/sessions/` |
-| **Credentials** | `/home/frank/.openclaw/credentials/` |
-| **Systemd unit** | `~/.config/systemd/user/openclaw-gateway.service` |
-| **Extensions** | `/home/frank/moltbot/extensions/` |
-| **Plugin SDK types** | `/home/frank/moltbot/dist/plugin-sdk/` |
-| **Node binary** | `/home/linuxbrew/.linuxbrew/Cellar/node/25.5.0/bin/node` |
+| **Source code** | `/Users/frankie/moltbot/` |
+| **Config file** | `/Users/frankie/.openclaw/openclaw.json` |
+| **Environment** | `/Users/frankie/.openclaw/.env` |
+| **Workspace** | `/Users/frankie/.openclaw/workspace/` |
+| **Agent sessions** | `/Users/frankie/.openclaw/agents/main/sessions/` |
+| **Credentials** | `/Users/frankie/.openclaw/credentials/` |
+| **LaunchAgent plist** | `~/Library/LaunchAgents/com.openclaw.gateway.plist` |
+| **Extensions** | `/Users/frankie/moltbot/extensions/` |
+| **Plugin SDK types** | `/Users/frankie/moltbot/dist/plugin-sdk/` |
+| **Node binary** | `/opt/homebrew/bin/node` (v25.6.1) |
+| **Service logs** | `/tmp/openclaw-gateway.stdout.log`, `/tmp/openclaw-gateway.stderr.log` |
 
 ---
 
-## Remote Access (from Windows / AI Agents)
+## Remote Access (from PrecisionDell / AI Agents)
 
-> **Critical:** OpenClaw runs in WSL2, not native Windows. SSH to `PrecisionDell` will fail
-> (port 22 is not open). Use `wsl -e` to run commands from PowerShell.
+> SSH is configured with passwordless key auth from PrecisionDell.
 
-### Running commands in WSL from Windows
+### SSH from PrecisionDell (PowerShell)
 
 ```powershell
-# Simple commands — use wsl -e directly
-wsl -e grep -n "bind" /home/frank/.openclaw/openclaw.json
-wsl -e systemctl --user status openclaw-gateway.service --no-pager
+# Quick access (uses ~/.ssh/config alias)
+ssh macmini
 
-# Commands needing a login shell (for PATH, env vars)
-wsl -e bash -lc "openclaw doctor"
-
-# Reading files
-wsl -e cat /home/frank/.openclaw/openclaw.json
+# Run a command directly
+ssh macmini "export PATH=/opt/homebrew/bin:/usr/bin:/bin:$PATH && openclaw models list"
 ```
 
-### ⚠️ PowerShell Escaping Gotcha
+### SSH Config (on PrecisionDell)
 
-PowerShell mangles quotes when passed through `wsl -e bash -c "..."`. Inline `sed` commands with double quotes will break silently or produce syntax errors.
-
-**Don't do this** (fails due to PowerShell quote stripping):
-```powershell
-wsl -e bash -c "sed -i 's/\"old\"/\"new\"/' /path/to/file"  # BROKEN
 ```
-
-**Do this instead** — use `wsl -e` without bash wrapper, or use Python:
-```powershell
-# Option 1: wsl -e sed directly (no bash -c wrapper)
-wsl -e sed -i 's/"old"/"new"/' /path/to/file
-
-# Option 2: Python for reliable JSON edits (recommended for config)
-wsl -e python3 -c "
-import json
-with open('/home/frank/.openclaw/openclaw.json') as f:
-    config = json.load(f)
-config['gateway']['bind'] = 'loopback'
-with open('/home/frank/.openclaw/openclaw.json', 'w') as f:
-    json.dump(config, f, indent=2)
-"
+Host macmini
+  HostName 192.168.1.246
+  User frankie
+  IdentityFile ~/.ssh/id_macmini
 ```
-
-### Filesystem Cross-Reference
-
-| From | Path |
-|------|------|
-| WSL → Windows | `/mnt/c/Users/frank/...` |
-| Windows → WSL | `\\wsl$\Ubuntu-22.04\home\frank\...` |
-| PowerShell → WSL command | `wsl -e <command>` |
 
 ---
 
@@ -129,7 +99,6 @@ See [config-reference.md](config-reference.md) for the full annotated config.
 - **Allowed user:** `U03CS6U0QEL` (Frankie)
 
 ### Plugins
-- `google-antigravity-auth` — OAuth authentication
 - `slack` — Slack channel integration
 
 ---
@@ -143,30 +112,31 @@ See [config-reference.md](config-reference.md) for the full annotated config.
 openclaw gateway start
 openclaw gateway stop
 
-# Via systemd directly
-systemctl --user start openclaw-gateway.service
-systemctl --user stop openclaw-gateway.service
-systemctl --user restart openclaw-gateway.service
+# Via launchd directly
+launchctl start com.openclaw.gateway
+launchctl stop com.openclaw.gateway
+# Restart = stop + start
+launchctl stop com.openclaw.gateway && launchctl start com.openclaw.gateway
 ```
 
 ### View Logs
 
 ```bash
 # Recent logs
-journalctl --user -u openclaw-gateway.service --no-pager -n 50
+tail -50 /tmp/openclaw-gateway.stderr.log
 
 # Follow live
-journalctl --user -u openclaw-gateway.service -f
+tail -f /tmp/openclaw-gateway.stderr.log
 
 # Filter for errors
-journalctl --user -u openclaw-gateway.service --no-pager | grep -i 'error\|warn'
+grep -i 'error\|warn' /tmp/openclaw-gateway.stderr.log
 ```
 
 ### Check Status
 
 ```bash
 # Service status
-systemctl --user status openclaw-gateway.service
+launchctl list com.openclaw.gateway
 
 # Process check
 pgrep -f 'moltbot/dist/index.js gateway'
@@ -215,13 +185,13 @@ openclaw doctor --fix
 # Or manually with Python
 python3 -c "
 import json
-f = '/home/frank/.openclaw/openclaw.json'
+f = '/Users/frankie/.openclaw/openclaw.json'
 c = json.load(open(f))
 for k in ['audio', 'tts']:
     c.pop(k, None)
 json.dump(c, open(f, 'w'), indent=2)
 "
-systemctl --user restart openclaw-gateway.service
+launchctl stop com.openclaw.gateway && launchctl start com.openclaw.gateway
 ```
 
 > **Warning:** `openclaw doctor` updates can sometimes re-inject invalid keys.
@@ -241,11 +211,11 @@ The `gateway.bind` field has **strict schema validation**. Only specific values 
 When this happens, the CLI is **completely unusable** — every command (including `openclaw config set` and `openclaw doctor --fix`) will fail with the same validation error.
 
 **Fix** (must edit JSON directly since CLI is broken):
-```powershell
-# From Windows PowerShell — use Python for reliable JSON editing
-wsl -e python3 -c "
+```bash
+# Use Python for reliable JSON editing
+python3 -c "
 import json
-f = '/home/frank/.openclaw/openclaw.json'
+f = '/Users/frankie/.openclaw/openclaw.json'
 c = json.load(open(f))
 c['gateway']['bind'] = 'loopback'
 json.dump(c, open(f, 'w'), indent=2)
@@ -253,17 +223,17 @@ print('Fixed: gateway.bind set to loopback')
 "
 
 # Then restart
-wsl -e bash -lc "systemctl --user restart openclaw-gateway.service"
+launchctl stop com.openclaw.gateway && launchctl start com.openclaw.gateway
 ```
 
 ### Gateway crash loop
 
 ```bash
-# Check restart counter
-systemctl --user status openclaw-gateway.service
+# Check service status
+launchctl list com.openclaw.gateway
 
 # Read crash reason
-journalctl --user -u openclaw-gateway.service --no-pager -n 20
+tail -20 /tmp/openclaw-gateway.stderr.log
 
 # Common causes:
 # 1. Invalid config keys (see above)
@@ -290,7 +260,7 @@ See **[model-registry-lag.md](model-registry-lag.md)** for the full write-up.
 **Quick fix:** Switch to the Google AI direct provider:
 ```bash
 openclaw config set agents.defaults.model.primary "google/gemini-3.1-pro-preview"
-systemctl --user restart openclaw-gateway.service
+launchctl stop com.openclaw.gateway && launchctl start com.openclaw.gateway
 ```
 
 ---
@@ -315,7 +285,7 @@ TTS is configured at **runtime**, not in `openclaw.json`. Use slash commands in 
 
 ### talk-voice Extension
 
-Located at `/home/frank/moltbot/extensions/talk-voice/`. This is an ElevenLabs voice management plugin (list/set voices). Requires `talk.apiKey` to be configured.
+Located at `/Users/frankie/moltbot/extensions/talk-voice/`. This is an ElevenLabs voice management plugin (list/set voices). Requires `talk.apiKey` to be configured.
 
 > **Important:** Do NOT add `audio.stt`, `audio.tts`, or `tts` keys to `openclaw.json`.
 > These will crash the gateway.
@@ -324,11 +294,10 @@ Located at `/home/frank/moltbot/extensions/talk-voice/`. This is an ElevenLabs v
 
 ## Extensions
 
-40+ extensions are available at `/home/frank/moltbot/extensions/`. Currently enabled:
+40+ extensions are available at `/Users/frankie/moltbot/extensions/`. Currently enabled:
 
 | Extension | Status | Purpose |
 |-----------|--------|---------|
-| `google-antigravity-auth` | ✅ Enabled | OAuth for Google Antigravity |
 | `slack` | ✅ Enabled | Slack channel integration |
 
 Others available include: `discord`, `telegram`, `signal`, `whatsapp`, `memory-core`, `memory-lancedb`, `talk-voice`, `voice-call`, `copilot-proxy`, `diagnostics-otel`, etc.
@@ -337,29 +306,28 @@ To enable an extension:
 ```bash
 openclaw plugins enable <name>
 # Then add to plugins.allow in config
-openclaw config set plugins.allow '["slack","google-antigravity-auth","<name>"]'
+openclaw config set plugins.allow '["slack","<name>"]'
 ```
 
 ---
 
 ## Environment Variables
 
-**File:** `/home/frank/.openclaw/.env`
+**File:** `/Users/frankie/.openclaw/.env`
 
 | Variable | Purpose |
 |----------|---------|
 | `GEMINI_API_KEY` | API key for Google Gemini (used by Gemini CLI auth) |
 
-The systemd service also sets:
+The launchd service also sets:
 - `OPENCLAW_GATEWAY_PORT=18789`
 - `OPENCLAW_GATEWAY_TOKEN=<gateway auth token>`
-- `OPENCLAW_SERVICE_VERSION=2026.2.18`
 
 ---
 
 ## Workspace ("Brain on Disk")
 
-The agent workspace (`/home/frank/.openclaw/workspace/`) is TapBot's persistent "brain on disk." It lives locally inside WSL and **persists across restarts**, meaning the agent retains context, memory, and skills between sessions.
+The agent workspace (`/Users/frankie/.openclaw/workspace/`) is TapBot's persistent "brain on disk." It **persists across restarts**, meaning the agent retains context, memory, and skills between sessions.
 
 ### 🧠 Memory
 
@@ -387,23 +355,19 @@ The agent workspace (`/home/frank/.openclaw/workspace/`) is TapBot's persistent 
 
 ### 📂 Working Files
 
-The workspace also holds scripts, temporary data, and downloads (e.g., audio files, Xactimate scripts). These live here unless explicitly moved to Windows.
-
-### 🔗 Cross-Filesystem Access
-
-Even though TapBot runs in Linux (WSL), it can access Windows files via `/mnt/c/Users/frank/...`. The pattern is:
-- **Workspace** → internal logic, memory, and tools
-- **Windows folders** (e.g., Desktop) → user-facing deliverables
+The workspace also holds scripts, temporary data, and downloads.
 
 ---
 
 ## History
 
-### Migration from Docker to Native WSL
+### Migration from WSL2 to Mac Mini (2026-02-26)
+
+The gateway was migrated from WSL2 Ubuntu-22.04 on PrecisionDell to a Mac Mini (Apple Silicon, macOS 26.3). Service management moved from systemd to launchd. See `implementation_plan.md` in the vidaFS repo for the full migration steps.
+
+### Migration from Docker to Native WSL (earlier)
 
 The `archive/` directory contains the original Docker-based deployment approach:
 - `docker-compose.yml` — Docker service definition (moltbot image)
 - `docker-compose.override.yml` — Port overrides
 - `enable_wsl_features.ps1` — Script to enable WSL features in Windows
-
-The setup was migrated to **native WSL2 execution** with systemd for better performance and simpler management. The gateway now runs directly via `node` instead of inside a Docker container.
