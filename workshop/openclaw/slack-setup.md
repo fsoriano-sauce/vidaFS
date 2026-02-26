@@ -75,5 +75,5 @@ When you add/remove scopes in the Slack app settings:
    ```
 4. Restart gateway:
    ```bash
-   systemctl --user restart openclaw-gateway.service
+   launchctl stop com.openclaw.gateway && launchctl start com.openclaw.gateway
    ```

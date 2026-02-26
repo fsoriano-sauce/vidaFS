@@ -39,7 +39,7 @@ Bypass the Antigravity provider entirely and use the Google AI API, which always
 openclaw config set agents.defaults.model.primary "google/gemini-3.1-pro-preview"
 
 # Restart
-systemctl --user restart openclaw-gateway.service
+launchctl stop com.openclaw.gateway && launchctl start com.openclaw.gateway
 
 # Verify
 openclaw models list
@@ -56,14 +56,14 @@ Anthropic models on Antigravity are reliably available because they have forward
 
 ```bash
 openclaw config set agents.defaults.model.primary "google-antigravity/claude-opus-4-6-thinking"
-systemctl --user restart openclaw-gateway.service
+launchctl stop com.openclaw.gateway && launchctl start com.openclaw.gateway
 ```
 
 ### Option 3: Wait for OpenClaw update
 
 Check for upstream fixes:
 ```bash
-cd /home/frank/moltbot
+cd /Users/frankie/moltbot
 git fetch
 git log --oneline origin/main..HEAD   # See if you're behind
 openclaw doctor                        # Interactive update + validation
@@ -72,7 +72,7 @@ openclaw doctor                        # Interactive update + validation
 After updating, switch back to the new Antigravity model:
 ```bash
 openclaw config set agents.defaults.model.primary "google-antigravity/gemini-3.1-pro-high"
-systemctl --user restart openclaw-gateway.service
+launchctl stop com.openclaw.gateway && launchctl start com.openclaw.gateway
 openclaw models list   # Should NOT show "missing"
 ```
 
@@ -89,7 +89,7 @@ openclaw models list
 openclaw models list --all | grep google-antigravity
 
 # 3. Check logs for model errors
-journalctl --user -u openclaw-gateway.service --no-pager | grep -i 'unknown model\|missing\|deprecated'
+grep -i 'unknown model\|missing\|deprecated' /tmp/openclaw-gateway.stderr.log
 
 # 4. Check current config
 openclaw config get agents.defaults.model.primary
@@ -105,3 +105,5 @@ openclaw config get agents.defaults.model.primary
 | `src/agents/model-forward-compat.ts` | Forward-compat resolvers (Anthropic only) |
 | `src/agents/model-catalog.ts` | Reads `models.json` from agent dir |
 | `src/agents/pi-model-discovery.ts` | ModelRegistry wrapper from `@mariozechner/pi-coding-agent` |
+
+> **Note:** Source code is at `/Users/frankie/moltbot/` on the Mac Mini.

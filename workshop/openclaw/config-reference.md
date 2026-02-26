@@ -2,12 +2,13 @@
 
 > Annotated version of `~/.openclaw/openclaw.json` with explanations.
 > Sensitive tokens are redacted.
+> **Host:** Mac Mini (macOS 26.3, Apple Silicon) — updated 2026-02-26
 
 ```jsonc
 {
   // Version tracking — updated automatically by openclaw doctor
   "meta": {
-    "lastTouchedVersion": "2026.2.18"
+    "lastTouchedVersion": "2026.2.20"
   },
 
   // Authentication profiles for LLM providers
@@ -15,8 +16,12 @@
     "profiles": {
       "google-antigravity:frankie@wescope.com": {
         "provider": "google-antigravity",  // Google's Antigravity platform
-        "mode": "oauth",                   // OAuth flow (browser-based)
+        "mode": "oauth",
         "email": "frankie@wescope.com"
+      },
+      "openai-codex:default": {
+        "provider": "openai-codex",        // OpenAI Codex provider
+        "mode": "oauth"
       }
     }
   },
@@ -25,13 +30,27 @@
   "agents": {
     "defaults": {
       "model": {
-        "primary": "google/gemini-3.1-pro-preview"  // Default LLM (see model-registry-lag.md)
+        "primary": "openai-codex/gpt-5.3-codex"  // Current default LLM
       },
-      "workspace": "/home/frank/.openclaw/workspace",
+      "models": {
+        "openai-codex/gpt-5.3-codex": {}         // Model-specific overrides (empty = defaults)
+      },
+      "workspace": "/Users/frankie/.openclaw/workspace",
       "memorySearch": {
         "enabled": true    // Enables semantic memory search across sessions
       },
       "maxConcurrent": 4   // Max concurrent agent runs
+    }
+  },
+
+  // Web search tools
+  "tools": {
+    "web": {
+      "search": {
+        "enabled": true,
+        "provider": "brave",       // Brave Search API
+        "apiKey": "BSA1uma..."     // Brave API key (redacted)
+      }
     }
   },
 
@@ -68,7 +87,7 @@
   "gateway": {
     "port": 18789,
     "mode": "local",
-    "bind": "loopback",      // Valid: "loopback" (localhost only) or "lan" (network-accessible, required for device pairing). "all" is INVALID.
+    "bind": "loopback",      // Valid: "loopback" (localhost only) or "lan" (network-accessible). "all" is INVALID.
     "auth": {
       "mode": "token",
       "token": "cf468190..."  // Gateway auth token (for web UI / API)
@@ -89,12 +108,8 @@
   // Plugin management
   "plugins": {
     "enabled": true,
-    "allow": [                 // Whitelist of allowed plugins
-      "slack",
-      "google-antigravity-auth"
-    ],
-    "entries": {               // Plugin-specific configs
-      "google-antigravity-auth": { "enabled": true },
+    "allow": ["slack"],       // Only Slack plugin enabled on Mac Mini
+    "entries": {
       "slack": { "enabled": true }
     }
   },
@@ -107,7 +122,21 @@
   // Command settings
   "commands": {
     "native": "auto",          // Auto-detect native commands
-    "nativeSkills": "auto"     // Auto-detect native skills
+    "nativeSkills": "auto",    // Auto-detect native skills
+    "restart": true            // Allow restart command
+  },
+
+  // Internal hooks (managed automatically, shown for reference)
+  "hooks": {
+    "internal": {
+      "enabled": true,
+      "entries": {
+        "boot-md": { "enabled": true },
+        "bootstrap-extra-files": { "enabled": true },
+        "command-logger": { "enabled": true },
+        "session-memory": { "enabled": true }
+      }
+    }
   }
 }
 ```
@@ -143,4 +172,9 @@ openclaw config get <dotted.key>
 If editing JSON directly, validate with:
 ```bash
 openclaw doctor
+```
+
+After config changes, restart the gateway:
+```bash
+launchctl stop com.openclaw.gateway && launchctl start com.openclaw.gateway
 ```
