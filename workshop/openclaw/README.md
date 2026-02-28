@@ -361,6 +361,45 @@ The workspace also holds scripts, temporary data, and downloads.
 
 ## History
 
+### Local LLM Attempt (2026-02-28) — Failed, 16 GB Insufficient
+
+> **Result:** Local models **do not work** on a 16 GB Mac Mini for OpenClaw's agent pipeline.
+> A **32+ GB** machine is required for local model operation.
+
+#### Why It Fails
+
+OpenClaw's embedded agent prompt is very large (system instructions + all tools/skills + session history).
+When Ollama loads a model, it auto-sizes the context window to fit the prompt. For `llama3.1:8b`,
+this resulted in a **131K context window using 22 GB** — far exceeding 16 GB unified memory.
+
+#### Models Tested
+
+| Model | Size | Issue |
+|---|---|---|
+| `qwen2.5-coder:14b` | 9 GB (Q4_K_M) | Loaded as 14 GB in memory; Ollama hung, runner process wouldn't die |
+| `qwen2.5-coder:7b` | 4.7 GB | Coding-only model returned `NO_REPLY` for casual chat; OpenClaw dropped the response |
+| `qwen3:8b` | 5.2 GB | Thinking model put output in `reasoning` field, left `content` empty; OpenAI-compat API incompatible |
+| `qwen3:30b-a3b` (MoE) | 18 GB | MoE requires all weights loaded; far too large for 16 GB |
+| `llama3.1:8b` | 4.9 GB | Model itself fits, but 131K context allocation → 22 GB total; `fetch failed` after 5 min |
+| `llama3.1-small` (custom 4K ctx) | 4.9 GB | Ollama ignored custom `num_ctx`; still loaded 131K context |
+
+#### Key Learnings
+
+1. **Model file size ≠ memory usage.** A 4.9 GB model can use 22 GB with a large context window.
+2. **Ollama's OpenAI-compat API** has issues with Qwen3 thinking models (`content` vs `reasoning`).
+3. **Coding-only models** (e.g., `qwen2.5-coder`) return `NO_REPLY` for conversational prompts.
+4. **Ollama `num_ctx` in Modelfile** may be overridden by the client (OpenClaw) at request time.
+5. **Stuck Ollama runner processes** survive `brew services restart`; require `pkill -9 -f "ollama runner"`.
+6. **Minimum hardware for local OpenClaw:** Mac with **32 GB+ unified memory**, or use a cloud model API.
+
+#### Current Model (cloud)
+
+```
+google/gemini-3.1-pro-preview   (uses GEMINI_API_KEY)
+```
+
+---
+
 ### Migration from WSL2 to Mac Mini (2026-02-26)
 
 The gateway was migrated from WSL2 Ubuntu-22.04 on PrecisionDell to a Mac Mini (Apple Silicon, macOS 26.3). Service management moved from systemd to launchd. See `implementation_plan.md` in the vidaFS repo for the full migration steps.
