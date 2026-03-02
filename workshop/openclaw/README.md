@@ -1,7 +1,7 @@
 # OpenClaw Gateway — Setup & Reference
 
-> **Last updated:** 2026-02-26
-> **Version:** OpenClaw 2026.2.26
+> **Last updated:** 2026-03-01
+> **Version:** OpenClaw 2026.2.27
 > **Host:** Mac Mini (macOS 26.3, Apple Silicon)
 > **Migrated from:** PrecisionDell (Windows 11 + WSL2 Ubuntu-22.04) on 2026-02-26
 
@@ -77,10 +77,12 @@ Host macmini
 
 See [config-reference.md](config-reference.md) for the full annotated config.
 
-### Authentication
-- **Provider:** Google Antigravity (OAuth) — also Google AI direct
+### Authentication & Model Fallback Chain
+- **Provider:** Google AI Studio (Free Tier) + Google Antigravity (OAuth) + OpenAI Codex (OAuth)
 - **User:** `frankie@wescope.com`
-- **LLM Model:** `google/gemini-3.1-pro-preview` (primary, via Google AI API)
+- **Primary Model:** `google/gemini-2.5-flash` (Free Tier — project: `openclaw-free-tier`)
+- **Fallback 1:** `openai-codex/gpt-5.3-codex` (OAuth, no per-token cost)
+- **Fallback 2:** `google/gemini-3.1-pro-preview` (Paid — project: `xano-fivetran-bq`, key: `OpenClaw_Paid_Fallback`)
 - **Available Antigravity models:** `gemini-3-flash`, `gemini-3-pro-high`, `gemini-3-pro-low`, `claude-opus-4-6-thinking`, `claude-opus-4-6`, `claude-sonnet-4-5`, `gpt-oss-120b-medium`
 - **Note:** See [model-registry-lag.md](model-registry-lag.md) for why the model may not be on the Antigravity provider
 
@@ -313,15 +315,21 @@ openclaw config set plugins.allow '["slack","<name>"]'
 
 ## Environment Variables
 
-**File:** `/Users/frankie/.openclaw/.env`
+**File:** `/Users/frankie/.openclaw/.env` and `~/.zshenv`
 
-| Variable | Purpose |
-|----------|---------|
-| `GEMINI_API_KEY` | API key for Google Gemini (used by Gemini CLI auth) |
+| Variable | Purpose | Set In |
+|----------|---------|--------|
+| `GEMINI_API_KEY` | API key for Google Gemini (used by Gemini CLI auth) | `.env` |
+| `GEMINI_API_KEY_FREE` | Free-tier Gemini API key (project: `openclaw-free-tier`) | `~/.zshenv` |
+| `OPENCLAW_MODEL_PRIMARY` | Primary model override | `~/.zshenv` |
+| `OPENCLAW_MODEL_FALLBACKS` | Comma-separated fallback models | `~/.zshenv` |
 
 The launchd service also sets:
 - `OPENCLAW_GATEWAY_PORT=18789`
 - `OPENCLAW_GATEWAY_TOKEN=<gateway auth token>`
+- `GEMINI_API_KEY_FREE=<free tier key>`
+- `OPENCLAW_MODEL_PRIMARY=google/gemini-2.5-flash`
+- `OPENCLAW_MODEL_FALLBACKS=openai-codex/gpt-5.3-codex,google-antigravity/gemini-3.1-pro-preview`
 
 ---
 
@@ -395,8 +403,38 @@ this resulted in a **131K context window using 22 GB** — far exceeding 16 GB u
 #### Current Model (cloud)
 
 ```
-google/gemini-3.1-pro-preview   (uses GEMINI_API_KEY)
+google/gemini-2.5-flash          (Free Tier, primary)
+openai-codex/gpt-5.3-codex       (OAuth, fallback 1)
+google/gemini-3.1-pro-preview    (Paid, fallback 2)
 ```
+
+---
+
+### Google Cloud Project Cleanup (2026-03-01)
+
+> **Result:** Consolidated from 5 API keys across 3 projects down to 2 keys across 2 projects.
+
+#### What Was Done
+
+1. **Deleted projects:** `Frankie Moltbot` (`gen-lang-client-0492263578`) and `xanoslackapi` (`gen-lang-client-0967890067`) — zero usage, unnecessary billing.
+2. **Deleted keys:** Two unused `Gemini-Live-Agent-Key-V3` keys from `xano-fivetran-bq`, plus the exposed `xanogemini` key.
+3. **Created:** New free-tier project `OpenClaw Free Tier` with a dedicated API key for TapBot.
+4. **Renamed:** `Openclaw_free` key → `OpenClaw_Paid_Fallback` for clarity.
+5. **Security:** Exposed API key in `run_analysis.py` was replaced with `os.environ["GEMINI_API_KEY"]`, git history scrubbed via `filter-branch`, and force-pushed. The exposed key was deleted from Google AI Studio.
+6. **Installed:** `gcloud` CLI via Homebrew, authenticated as `frankie@wescope.com`.
+
+#### Current API Key Inventory
+
+| Key Name | Project | Tier | Purpose |
+|---|---|---|---|
+| `Free Gemini API Key` | `openclaw-free-tier` | Free | TapBot primary model |
+| `OpenClaw_Paid_Fallback` | `xano-fivetran-bq` | Paid (Tier 3) | TapBot last-resort fallback |
+
+### Slack Streaming Duplicate Fix (2026-03-01)
+
+> **Problem:** TapBot was sending every message twice in Slack.
+> **Root cause:** `streaming: partial` + `nativeStreaming: true` caused OpenClaw to post an initial message and then edit it. With Gemini 2.5 Flash responding in ~1.6s, Slack rendered both as separate messages.
+> **Fix:** Set `streaming: off` and `nativeStreaming: false`. Also cleared stale `delivery-queue` entries from old failed local model attempts.
 
 ---
 

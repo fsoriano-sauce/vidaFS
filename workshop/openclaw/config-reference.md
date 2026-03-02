@@ -2,7 +2,7 @@
 
 > Annotated version of `~/.openclaw/openclaw.json` with explanations.
 > Sensitive tokens are redacted.
-> **Host:** Mac Mini (macOS 26.3, Apple Silicon) — updated 2026-02-26
+> **Host:** Mac Mini (macOS 26.3, Apple Silicon) — updated 2026-03-01
 
 ```jsonc
 {
@@ -30,10 +30,15 @@
   "agents": {
     "defaults": {
       "model": {
-        "primary": "openai-codex/gpt-5.3-codex"  // Current default LLM
+        "primary": "google/gemini-2.5-flash",   // Free Tier (project: openclaw-free-tier)
+        "fallbacks": [                            // Ordered fallback chain
+          "openai-codex/gpt-5.3-codex",           //   1. OpenAI Codex (OAuth, no per-token cost)
+          "google/gemini-3.1-pro-preview"          //   2. Paid Gemini (project: xano-fivetran-bq)
+        ]
       },
       "models": {
-        "openai-codex/gpt-5.3-codex": {}         // Model-specific overrides (empty = defaults)
+        "openai-codex/gpt-5.3-codex": {},         // Model-specific overrides (empty = defaults)
+        "google/gemini-3.1-pro-preview": {}       // Paid fallback model
       },
       "workspace": "/Users/frankie/.openclaw/workspace",
       "memorySearch": {
@@ -66,11 +71,14 @@
       "appToken": "xapp-1-A0AC5M04...",   // App-Level Token (Socket Mode)
       "userToken": "xoxp-3407599763...",   // User OAuth Token
       "userTokenReadOnly": true,           // User token has limited scopes
+      // Streaming settings (disabled to prevent duplicate messages)
+      "streaming": "off",                // Was "partial" — caused duplicates with fast models
+      "nativeStreaming": false,           // Was true — Slack showed edit + post as two messages
 
       // Access control
       "groupPolicy": "allowlist",          // Only allowlisted users/channels
       "dmPolicy": "allowlist",
-      "allowFrom": ["U03CS6U0QEL"],        // Frankie's Slack user ID
+      "allowFrom": ["*"],                 // All users in allowlisted channels
 
       // Channel-specific settings
       "channels": {
@@ -78,6 +86,16 @@
           "enabled": true,
           "requireMention": false,         // Responds without @mention
           "users": ["U03CS6U0QEL"]
+        },
+        "C0AHUH6GAPK": {                   // Additional channel
+          "enabled": true,
+          "requireMention": false,
+          "users": ["U03CS6U0QEL"]
+        },
+        "C0AFG3A3VU6": {                   // Additional channel (all users)
+          "enabled": true,
+          "requireMention": false,
+          "users": ["*"]
         }
       }
     }
