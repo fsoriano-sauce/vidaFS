@@ -56,3 +56,4 @@ context_read-only/xano-wescope/workflow_tests/
 !context_read-only/xano-wescope/**/*.md
 !context_read-only/xano-wescope/**/*.csv
 !context_read-only/xano-wescope/**/*.py
+*.pkg

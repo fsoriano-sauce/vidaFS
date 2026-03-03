@@ -7,6 +7,7 @@ from datetime import datetime
 
 # Configuration
 API_KEY = "AIzaSyD7PpOBoHEGIiBBqL3Hco43BMeSEnmyVAc"
+API_KEY = os.environ["GEMINI_API_KEY"]
 PROJECT_ID = "xano-fivetran-bq"
 DATASET_ID = "slack_wescope"
 SOURCE_VIEW = f"{PROJECT_ID}.{DATASET_ID}.rpt_employee_daily_summary"

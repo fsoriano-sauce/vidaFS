@@ -2,12 +2,14 @@
 
 > Annotated version of `~/.openclaw/openclaw.json` with explanations.
 > Sensitive tokens are redacted.
+> **Host:** Mac Mini (macOS 26.3, Apple Silicon) — updated 2026-03-01
 
 ```jsonc
 {
   // Version tracking — updated automatically by openclaw doctor
   "meta": {
     "lastTouchedVersion": "2026.2.18"
+    "lastTouchedVersion": "2026.2.20"
   },
 
   // Authentication profiles for LLM providers
@@ -17,6 +19,12 @@
         "provider": "google-antigravity",  // Google's Antigravity platform
         "mode": "oauth",                   // OAuth flow (browser-based)
         "email": "frankie@wescope.com"
+        "mode": "oauth",
+        "email": "frankie@wescope.com"
+      },
+      "openai-codex:default": {
+        "provider": "openai-codex",        // OpenAI Codex provider
+        "mode": "oauth"
       }
     }
   },
@@ -28,10 +36,32 @@
         "primary": "google/gemini-3.1-pro-preview"  // Default LLM (see model-registry-lag.md)
       },
       "workspace": "/home/frank/.openclaw/workspace",
+        "primary": "google/gemini-2.5-flash",   // Free Tier (project: openclaw-free-tier)
+        "fallbacks": [                            // Ordered fallback chain
+          "openai-codex/gpt-5.3-codex",           //   1. OpenAI Codex (OAuth, no per-token cost)
+          "google/gemini-3.1-pro-preview"          //   2. Paid Gemini (project: xano-fivetran-bq)
+        ]
+      },
+      "models": {
+        "openai-codex/gpt-5.3-codex": {},         // Model-specific overrides (empty = defaults)
+        "google/gemini-3.1-pro-preview": {}       // Paid fallback model
+      },
+      "workspace": "/Users/frankie/.openclaw/workspace",
       "memorySearch": {
         "enabled": true    // Enables semantic memory search across sessions
       },
       "maxConcurrent": 4   // Max concurrent agent runs
+    }
+  },
+
+  // Web search tools
+  "tools": {
+    "web": {
+      "search": {
+        "enabled": true,
+        "provider": "brave",       // Brave Search API
+        "apiKey": "BSA1uma..."     // Brave API key (redacted)
+      }
     }
   },
 
@@ -47,11 +77,15 @@
       "appToken": "xapp-1-A0AC5M04...",   // App-Level Token (Socket Mode)
       "userToken": "xoxp-3407599763...",   // User OAuth Token
       "userTokenReadOnly": true,           // User token has limited scopes
+      // Streaming settings (disabled to prevent duplicate messages)
+      "streaming": "off",                // Was "partial" — caused duplicates with fast models
+      "nativeStreaming": false,           // Was true — Slack showed edit + post as two messages
 
       // Access control
       "groupPolicy": "allowlist",          // Only allowlisted users/channels
       "dmPolicy": "allowlist",
       "allowFrom": ["U03CS6U0QEL"],        // Frankie's Slack user ID
+      "allowFrom": ["*"],                 // All users in allowlisted channels
 
       // Channel-specific settings
       "channels": {
@@ -59,6 +93,16 @@
           "enabled": true,
           "requireMention": false,         // Responds without @mention
           "users": ["U03CS6U0QEL"]
+        },
+        "C0AHUH6GAPK": {                   // Additional channel
+          "enabled": true,
+          "requireMention": false,
+          "users": ["U03CS6U0QEL"]
+        },
+        "C0AFG3A3VU6": {                   // Additional channel (all users)
+          "enabled": true,
+          "requireMention": false,
+          "users": ["*"]
         }
       }
     }
@@ -69,6 +113,7 @@
     "port": 18789,
     "mode": "local",
     "bind": "loopback",      // Valid: "loopback" (localhost only) or "lan" (network-accessible, required for device pairing). "all" is INVALID.
+    "bind": "loopback",      // Valid: "loopback" (localhost only) or "lan" (network-accessible). "all" is INVALID.
     "auth": {
       "mode": "token",
       "token": "cf468190..."  // Gateway auth token (for web UI / API)
@@ -95,6 +140,8 @@
     ],
     "entries": {               // Plugin-specific configs
       "google-antigravity-auth": { "enabled": true },
+    "allow": ["slack"],       // Only Slack plugin enabled on Mac Mini
+    "entries": {
       "slack": { "enabled": true }
     }
   },
@@ -108,6 +155,21 @@
   "commands": {
     "native": "auto",          // Auto-detect native commands
     "nativeSkills": "auto"     // Auto-detect native skills
+    "nativeSkills": "auto",    // Auto-detect native skills
+    "restart": true            // Allow restart command
+  },
+
+  // Internal hooks (managed automatically, shown for reference)
+  "hooks": {
+    "internal": {
+      "enabled": true,
+      "entries": {
+        "boot-md": { "enabled": true },
+        "bootstrap-extra-files": { "enabled": true },
+        "command-logger": { "enabled": true },
+        "session-memory": { "enabled": true }
+      }
+    }
   }
 }
 ```
@@ -143,4 +205,9 @@ openclaw config get <dotted.key>
 If editing JSON directly, validate with:
 ```bash
 openclaw doctor
+```
+
+After config changes, restart the gateway:
+```bash
+launchctl stop com.openclaw.gateway && launchctl start com.openclaw.gateway
 ```
