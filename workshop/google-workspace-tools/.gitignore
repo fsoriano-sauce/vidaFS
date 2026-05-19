@@ -1,0 +1,4 @@
+# OAuth credentials and tokens — NEVER commit
+client_secret*.json
+tokens*.json
+node_modules/
