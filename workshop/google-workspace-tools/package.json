@@ -1,0 +1,9 @@
+{
+  "name": "google-workspace-tools",
+  "version": "1.0.0",
+  "description": "Google Workspace Multi-Account Tools",
+  "main": "open_in_google.js",
+  "dependencies": {
+    "googleapis": "^171.4.0"
+  }
+}
